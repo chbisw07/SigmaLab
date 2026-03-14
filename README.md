@@ -50,6 +50,12 @@ Run the API (local dev):
 .venv/bin/uvicorn app.main:app --reload
 ```
 
+One-command runner (starts PostgreSQL, applies migrations, runs API):
+
+```bash
+./run_sigmalab_backend.sh
+```
+
 Health check:
 
 - `GET /health`
