@@ -34,7 +34,7 @@
  
 [tool.setuptools.packages.find]
 where = ["backend"]
-include = ["app*", "data*", "strategies*"]
+include = ["app*", "data*", "strategies*", "indicators*"]
  
 [tool.pytest.ini_options]
 testpaths = ["tests"]

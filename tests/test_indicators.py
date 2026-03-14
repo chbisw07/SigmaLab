@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from strategies.indicators import adx, atr, ema, rsi, sma, vwap
+from indicators import adx, atr, ema, rsi, sma, vwap
 
 
 def test_sma_and_ema_match_pandas_definitions() -> None:
@@ -44,4 +44,3 @@ def test_vwap_resets_each_day() -> None:
     assert float(vw.iloc[0]) == 100.0
     assert float(vw.iloc[2]) == 100.0
     assert float(vw.iloc[3]) == 200.0
-

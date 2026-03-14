@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 from strategies.base import BaseStrategy, StrategyParams
-from strategies.indicators import rsi, vwap
+from indicators import rsi, vwap
 from strategies.models import ParameterSpec, StrategyCategory, StrategyMetadata, StrategySignals
 from strategies.utils import cross_above, cross_below, normalize_signal_frame
 
