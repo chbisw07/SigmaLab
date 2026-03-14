@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, Uuid, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -50,6 +50,13 @@ class BrokerConnection(Base, IdMixin, TimestampMixin):
 
 class Instrument(Base, IdMixin, TimestampMixin):
     __tablename__ = "instruments"
+    __table_args__ = (
+        UniqueConstraint(
+            "broker_instrument_token",
+            "exchange",
+            name="uq_instruments_broker_token_exchange",
+        ),
+    )
 
     broker_instrument_token: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     exchange: Mapped[str] = mapped_column(String(16), nullable=False)
@@ -74,6 +81,13 @@ class Watchlist(Base, IdMixin, TimestampMixin):
 
 class WatchlistItem(Base, IdMixin, TimestampMixin):
     __tablename__ = "watchlist_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "watchlist_id",
+            "instrument_id",
+            name="uq_watchlist_items_watchlist_instrument",
+        ),
+    )
 
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("watchlists.id"), nullable=False, index=True

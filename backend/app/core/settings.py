@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # Placeholders for Kite credentials. Do not hardcode real secrets.
     kite_api_key: str | None = Field(default=None)
     kite_api_secret: str | None = Field(default=None)
+    kite_access_token: str | None = Field(default=None)
 
     @field_validator("database_url")
     @classmethod
