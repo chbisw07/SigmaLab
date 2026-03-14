@@ -16,7 +16,7 @@ PH3 implements SigmaLab’s **Strategy Engine**: a reusable, testable framework 
 
 - **Branch name:** `feature/ph3-strategy-engine-enhancements`
 - **PH3 type:** PH3 enhancement pass (built on the previously implemented PH3 branch)
-- **HEAD commit (at time of report update):** `269937851691d3efa2965f7ef8b32f5fcbcab266`
+- **HEAD commit (at time of report update):** `b1cdd4a53a55d7a412ed1d3efedc929eec5bd94a`
 
 ---
 
