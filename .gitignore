@@ -3,9 +3,12 @@ __pycache__/
 .env
 .env.*
 venv/
+.venv/
 node_modules/
 dist/
 build/
 .DS_Store
 *.sqlite3
 *.log
+*.egg-info/
+.pytest_cache/
