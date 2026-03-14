@@ -3,8 +3,22 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
 
 from kiteconnect import KiteConnect
+
+
+def _load_dotenv() -> None:
+    """Load repo `.env` into the process env for local convenience."""
+    try:
+        from dotenv import load_dotenv  # type: ignore[import-not-found]
+    except Exception:
+        return
+
+    repo_root = Path(__file__).resolve().parents[1]
+    env_path = repo_root / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
 
 
 def _get_env(name: str) -> str | None:
@@ -32,6 +46,8 @@ def cmd_exchange(api_key: str, api_secret: str, request_token: str) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _load_dotenv()
+
     p = argparse.ArgumentParser(
         description="Helper to get a Zerodha KiteConnect access_token for SigmaLab (.env)."
     )
@@ -64,4 +80,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
