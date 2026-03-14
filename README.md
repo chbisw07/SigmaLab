@@ -128,7 +128,17 @@ PY
 
 ## PH3 Strategy Engine
 
-PH3 adds a reusable strategy foundation that produces signals and indicator overlays. Strategies never call broker APIs directly; they consume MarketDataService-compatible candles and only output signals/metadata.
+PH3 adds a reusable strategy foundation that produces **pure, vectorized signals** and indicator overlays.
+
+Architecture:
+
+Strategy (pure signal generator)  
+↓  
+`SignalResult` (signals + indicators + optional stop/take-profit)  
+↓  
+Backtest Engine (PH4) generates trades and ledgers
+
+Strategies never call broker APIs directly; they consume MarketDataService-compatible candles and only output signals/metadata.
 
 Built-in strategies:
 
