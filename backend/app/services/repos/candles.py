@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,35 @@ _CANDLE_UPSERT_BATCH_SIZE = 5000
 @dataclass(frozen=True)
 class CandleRepository:
     session: Session
+
+    def list_range(
+        self,
+        instrument_id,
+        base_interval: str,
+        start,
+        end,
+    ) -> list[dict]:
+        """Return candles in [start, end], ordered by timestamp ascending."""
+        stmt = (
+            select(Candle.ts, Candle.open, Candle.high, Candle.low, Candle.close, Candle.volume)
+            .where(Candle.instrument_id == instrument_id)
+            .where(Candle.base_interval == base_interval)
+            .where(Candle.ts >= start)
+            .where(Candle.ts <= end)
+            .order_by(Candle.ts.asc())
+        )
+        rows = self.session.execute(stmt).all()
+        return [
+            {
+                "timestamp": r.ts,
+                "open": r.open,
+                "high": r.high,
+                "low": r.low,
+                "close": r.close,
+                "volume": r.volume,
+            }
+            for r in rows
+        ]
 
     def upsert_many(self, rows: list[dict]) -> int:
         """Upsert base candles.

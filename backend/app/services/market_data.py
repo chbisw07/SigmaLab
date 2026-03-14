@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 from sqlalchemy.orm import Session
+from zoneinfo import ZoneInfo
 
 from app.core.settings import Settings
 from app.services.kite_provider import make_kite_client
@@ -32,6 +33,32 @@ class DBInstrumentTokenResolver(InstrumentTokenResolver):
 class DBCandleStore(BaseCandleStore):
     repo: CandleRepository
     tz: str = "Asia/Kolkata"
+
+    def get_base_candles(
+        self,
+        instrument_id: uuid.UUID,
+        base_interval: str,
+        start,
+        end,
+    ) -> pd.DataFrame:
+        tz = ZoneInfo(self.tz)
+        start_utc = _to_utc(start, tz)
+        end_utc = _to_utc(end, tz)
+
+        rows = self.repo.list_range(
+            instrument_id=instrument_id,
+            base_interval=base_interval,
+            start=start_utc,
+            end=end_utc,
+        )
+        if not rows:
+            return pd.DataFrame(columns=["timestamp", "open", "high", "low", "close", "volume"])
+
+        df = pd.DataFrame(rows)
+        ts = pd.to_datetime(df["timestamp"], utc=True).dt.tz_convert(tz).dt.tz_localize(None)
+        df["timestamp"] = ts
+        # Keep consistent column ordering for downstream aggregation.
+        return df[["timestamp", "open", "high", "low", "close", "volume"]]
 
     def upsert_base_candles(self, instrument_id: uuid.UUID, base_interval: str, candles: pd.DataFrame) -> None:
         if candles.empty:
@@ -76,3 +103,9 @@ def make_market_data_service(settings: Settings, session: Session) -> MarketData
         aggregator=aggregator,
         candle_store=candle_store,
     )
+
+
+def _to_utc(dt, tz: ZoneInfo):  # type: ignore[no-untyped-def]
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=tz).astimezone(ZoneInfo("UTC"))
+    return dt.astimezone(ZoneInfo("UTC"))
