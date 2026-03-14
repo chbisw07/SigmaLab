@@ -64,7 +64,7 @@ class SwingTrendPullbackStrategy(BaseStrategy):
                 type="float",
                 default=55.0,
                 min=1.0,
-                max=99.0,
+                max=100.0,
                 step=0.5,
             ),
             ParameterSpec(
@@ -73,7 +73,7 @@ class SwingTrendPullbackStrategy(BaseStrategy):
                 type="float",
                 default=65.0,
                 min=1.0,
-                max=99.0,
+                max=100.0,
                 step=0.5,
                 tunable=False,
             ),
@@ -149,4 +149,3 @@ class SwingTrendPullbackStrategy(BaseStrategy):
 
         out = normalize_signal_frame(out)
         return StrategySignals(frame=out)
-

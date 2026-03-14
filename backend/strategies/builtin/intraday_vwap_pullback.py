@@ -44,7 +44,7 @@ class IntradayVWAPPullbackStrategy(BaseStrategy):
                 type="float",
                 default=60.0,
                 min=1.0,
-                max=99.0,
+                max=100.0,
                 step=0.5,
             ),
             ParameterSpec(
@@ -53,7 +53,7 @@ class IntradayVWAPPullbackStrategy(BaseStrategy):
                 type="float",
                 default=70.0,
                 min=1.0,
-                max=99.0,
+                max=100.0,
                 step=0.5,
                 tunable=False,
             ),
@@ -98,4 +98,3 @@ class IntradayVWAPPullbackStrategy(BaseStrategy):
         )
         out = normalize_signal_frame(out)
         return StrategySignals(frame=out)
-
