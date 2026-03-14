@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -76,10 +76,10 @@ class WatchlistItem(Base, IdMixin, TimestampMixin):
     __tablename__ = "watchlist_items"
 
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("watchlists.id"), nullable=False, index=True
+        Uuid, ForeignKey("watchlists.id"), nullable=False, index=True
     )
     instrument_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("instruments.id"), nullable=False, index=True
+        Uuid, ForeignKey("instruments.id"), nullable=False, index=True
     )
     added_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -96,7 +96,9 @@ class Strategy(Base, IdMixin, TimestampMixin):
     category: Mapped[str | None] = mapped_column(String(32))
     description: Mapped[str | None] = mapped_column(Text)
     code_ref: Mapped[str | None] = mapped_column(String(256))
-    current_version_id: Mapped[str | None] = mapped_column(ForeignKey("strategy_versions.id"))
+    current_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("strategy_versions.id")
+    )
 
     versions: Mapped[list["StrategyVersion"]] = relationship(back_populates="strategy")
 
@@ -105,7 +107,7 @@ class StrategyVersion(Base, IdMixin, TimestampMixin):
     __tablename__ = "strategy_versions"
 
     strategy_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("strategies.id"), nullable=False, index=True
+        Uuid, ForeignKey("strategies.id"), nullable=False, index=True
     )
     version: Mapped[str] = mapped_column(String(32), nullable=False)
     changelog: Mapped[str | None] = mapped_column(Text)
@@ -119,7 +121,7 @@ class ParameterPreset(Base, IdMixin, TimestampMixin):
     __tablename__ = "parameter_presets"
 
     strategy_version_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("strategy_versions.id"), nullable=False, index=True
+        Uuid, ForeignKey("strategy_versions.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     values_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
@@ -129,10 +131,10 @@ class BacktestRun(Base, IdMixin, TimestampMixin):
     __tablename__ = "backtest_runs"
 
     strategy_version_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("strategy_versions.id"), nullable=False, index=True
+        Uuid, ForeignKey("strategy_versions.id"), nullable=False, index=True
     )
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("watchlists.id"), nullable=False, index=True
+        Uuid, ForeignKey("watchlists.id"), nullable=False, index=True
     )
     timeframe: Mapped[str] = mapped_column(String(16), nullable=False)
     date_range: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -148,7 +150,7 @@ class BacktestTrade(Base, IdMixin, TimestampMixin):
     __tablename__ = "backtest_trades"
 
     run_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("backtest_runs.id"), nullable=False, index=True
+        Uuid, ForeignKey("backtest_runs.id"), nullable=False, index=True
     )
     symbol: Mapped[str] = mapped_column(String(64), nullable=False)
     entry_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -165,10 +167,10 @@ class OptimizationJob(Base, IdMixin, TimestampMixin):
     __tablename__ = "optimization_jobs"
 
     strategy_version_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("strategy_versions.id"), nullable=False, index=True
+        Uuid, ForeignKey("strategy_versions.id"), nullable=False, index=True
     )
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("watchlists.id"), nullable=False, index=True
+        Uuid, ForeignKey("watchlists.id"), nullable=False, index=True
     )
     search_space_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     status: Mapped[OptimizationJobStatus] = mapped_column(
