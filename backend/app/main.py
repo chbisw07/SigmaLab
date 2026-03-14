@@ -13,6 +13,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings)
 
     app = FastAPI(title="SigmaLab API", version="0.1.0")
+    app.state.settings = settings
     app.state.database = Database.from_settings(settings)
     app.include_router(api_router)
 

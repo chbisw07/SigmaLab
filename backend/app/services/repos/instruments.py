@@ -47,3 +47,8 @@ class InstrumentRepository:
         self.session.commit()
         return len(values)
 
+    def get_broker_token(self, instrument_id) -> str:
+        inst = self.session.get(Instrument, instrument_id)
+        if inst is None:
+            raise KeyError("instrument not found")
+        return inst.broker_instrument_token

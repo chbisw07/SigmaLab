@@ -6,6 +6,7 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.db import Database
+from app.core.settings import Settings
 
 
 def get_database(request: Request) -> Database:
@@ -15,10 +16,16 @@ def get_database(request: Request) -> Database:
     return db
 
 
+def get_app_settings(request: Request) -> Settings:
+    settings = getattr(request.app.state, "settings", None)
+    if settings is None:
+        raise RuntimeError("Settings not configured on app.state")
+    return settings
+
+
 def get_db_session(db: Database = Depends(get_database)) -> Generator[Session, None, None]:
     session = db.session()
     try:
         yield session
     finally:
         session.close()
-
