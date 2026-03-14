@@ -50,13 +50,45 @@ class ParameterSpec:
 
 
 @dataclass(frozen=True)
-class StrategySignals:
-    """Normalized strategy outputs.
+class SignalResult:
+    """Structured, vectorized signal outputs returned by strategies.
 
-    `frame` must be a DataFrame with a `timestamp` column and boolean signal columns.
-    Strategies may also include indicator/overlay columns for later visualization.
+    Strategies are pure signal generators. They output:
+    - entry/exit signals (vectorized boolean Series)
+    - indicator overlays (DataFrame / Series)
+    - optional stop-loss / take-profit series
+    - optional metadata for later explanation/visualization
     """
 
-    frame: pd.DataFrame
-    explanation: dict[str, Any] | None = None
+    timestamp: pd.Series
+    indicators: pd.DataFrame
+    long_entry: pd.Series
+    long_exit: pd.Series
+    short_entry: pd.Series
+    short_exit: pd.Series
+    stop_loss: pd.Series | None = None
+    take_profit: pd.Series | None = None
+    metadata: dict[str, Any] | None = None
 
+    def to_frame(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            {
+                "timestamp": self.timestamp,
+                "long_entry": self.long_entry.astype(bool),
+                "long_exit": self.long_exit.astype(bool),
+                "short_entry": self.short_entry.astype(bool),
+                "short_exit": self.short_exit.astype(bool),
+            }
+        )
+        if self.stop_loss is not None:
+            df["stop_loss"] = self.stop_loss
+        if self.take_profit is not None:
+            df["take_profit"] = self.take_profit
+        if self.indicators is not None and not self.indicators.empty:
+            # Avoid column collisions by keeping indicator names distinct.
+            df = pd.concat([df.reset_index(drop=True), self.indicators.reset_index(drop=True)], axis=1)
+        return df
+
+
+# Backward-compatible alias for earlier PH3 work (deprecated).
+StrategySignals = SignalResult

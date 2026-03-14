@@ -71,7 +71,7 @@ def main(argv: list[str]) -> int:
 
     params = svc.validate(args.slug, overrides)
     strat = svc.instantiate(args.slug)
-    out = strat.generate_signals(candles, params).frame
+    out = strat.generate_signals(candles, params).to_frame()
 
     le = int(out["long_entry"].sum())
     lx = int(out["long_exit"].sum())

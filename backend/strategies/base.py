@@ -6,7 +6,8 @@ from typing import Any
 
 import pandas as pd
 
-from strategies.models import ParameterSpec, StrategyMetadata, StrategySignals
+from strategies.context import IndicatorContext, StrategyContext
+from strategies.models import ParameterSpec, SignalResult, StrategyMetadata
 
 
 def _require_candle_columns(df: pd.DataFrame) -> None:
@@ -39,8 +40,13 @@ class BaseStrategy(ABC):
     def parameters(cls) -> list[ParameterSpec]: ...
 
     @abstractmethod
-    def generate_signals(self, candles: pd.DataFrame, params: StrategyParams) -> StrategySignals: ...
+    def generate_signals(
+        self,
+        data: pd.DataFrame,
+        params: StrategyParams,
+        context: StrategyContext | None = None,
+        indicators: IndicatorContext | None = None,
+    ) -> SignalResult: ...
 
-    def _validate_input(self, candles: pd.DataFrame) -> None:
-        _require_candle_columns(candles)
-
+    def _validate_input(self, data: pd.DataFrame) -> None:
+        _require_candle_columns(data)

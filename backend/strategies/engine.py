@@ -8,7 +8,8 @@ from typing import Any
 from data.market_data_service import MarketDataService
 from data.timeframe import Timeframe
 
-from strategies.models import StrategySignals
+from strategies.context import IndicatorContext, StrategyContext
+from strategies.models import SignalResult
 from strategies.service import StrategyService
 
 
@@ -30,7 +31,9 @@ class StrategyEngine:
         end: datetime,
         strategy_slug: str,
         params: dict[str, Any] | None = None,
-    ) -> StrategySignals:
+        context: StrategyContext | None = None,
+        indicators: IndicatorContext | None = None,
+    ) -> SignalResult:
         candles = self.market_data.get_candles(
             instrument_id=instrument_id,
             timeframe=timeframe,
@@ -39,5 +42,4 @@ class StrategyEngine:
         )
         strategy = self.strategies.instantiate(strategy_slug)
         validated = self.strategies.validate(strategy_slug, params)
-        return strategy.generate_signals(candles, validated)
-
+        return strategy.generate_signals(candles, validated, context=context, indicators=indicators)

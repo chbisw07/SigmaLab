@@ -3,9 +3,10 @@ from __future__ import annotations
 import pandas as pd
 
 from strategies.base import BaseStrategy, StrategyParams
+from strategies.context import IndicatorContext, StrategyContext
 from indicators import rsi, vwap
-from strategies.models import ParameterSpec, StrategyCategory, StrategyMetadata, StrategySignals
-from strategies.utils import cross_above, cross_below, normalize_signal_frame
+from strategies.models import ParameterSpec, SignalResult, StrategyCategory, StrategyMetadata
+from strategies.utils import cross_above, cross_below
 
 
 class IntradayVWAPPullbackStrategy(BaseStrategy):
@@ -69,32 +70,40 @@ class IntradayVWAPPullbackStrategy(BaseStrategy):
             ),
         ]
 
-    def generate_signals(self, candles: pd.DataFrame, params: StrategyParams) -> StrategySignals:
-        self._validate_input(candles)
-        df = candles.copy()
+    def generate_signals(
+        self,
+        data: pd.DataFrame,
+        params: StrategyParams,
+        context: StrategyContext | None = None,
+        indicators: IndicatorContext | None = None,
+    ) -> SignalResult:
+        self._validate_input(data)
+        df = data.copy()
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=False)
         df = df.sort_values("timestamp").reset_index(drop=True)
 
         close = df["close"].astype("float64")
-        vw = vwap(df)
-        r = rsi(close, int(params.values["rsi_period"]))
+        ic = indicators or IndicatorContext()
+        rsi_period = int(params.values["rsi_period"])
+        vw = ic.get(("vwap",), lambda: vwap(df))
+        r = ic.get(("rsi", "close", rsi_period), lambda: rsi(close, rsi_period))
 
         buffer_pct = float(params.values["vwap_buffer_pct"]) / 100.0
         entry_line = vw * (1.0 + buffer_pct)
 
-        entry = cross_above(close, entry_line) & (r < float(params.values["rsi_entry_max"]))
-        exit_ = cross_below(close, vw) | (r > float(params.values["rsi_exit_min"]))
+        entry = (cross_above(close, entry_line) & (r < float(params.values["rsi_entry_max"]))).fillna(False).astype(bool)
+        exit_ = (cross_below(close, vw) | (r > float(params.values["rsi_exit_min"]))).fillna(False).astype(bool)
 
-        out = pd.DataFrame(
-            {
-                "timestamp": df["timestamp"],
-                "long_entry": entry,
-                "long_exit": exit_,
-                "short_entry": False,
-                "short_exit": False,
-                "vwap": vw,
-                "rsi": r,
-            }
+        ind_df = pd.DataFrame({"vwap": vw, "rsi": r})
+        false_s = pd.Series(False, index=entry.index)
+        return SignalResult(
+            timestamp=df["timestamp"],
+            indicators=ind_df,
+            long_entry=entry,
+            long_exit=exit_,
+            short_entry=false_s,
+            short_exit=false_s,
+            stop_loss=None,
+            take_profit=None,
+            metadata={"context": context.__dict__ if context else None},
         )
-        out = normalize_signal_frame(out)
-        return StrategySignals(frame=out)

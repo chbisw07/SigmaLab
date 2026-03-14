@@ -60,7 +60,7 @@ def test_swing_trend_pullback_emits_normalized_signal_columns() -> None:
             "atr_mult": 2.0,
         }
     )
-    out = strat.generate_signals(candles, params).frame
+    out = strat.generate_signals(candles, params).to_frame()
     for c in ["timestamp", "long_entry", "long_exit", "short_entry", "short_exit"]:
         assert c in out.columns
     assert out["long_entry"].dtype == bool
@@ -80,8 +80,7 @@ def test_intraday_vwap_pullback_emits_signals() -> None:
             "vwap_buffer_pct": 0.0,
         }
     )
-    out = strat.generate_signals(candles, params).frame
+    out = strat.generate_signals(candles, params).to_frame()
     assert out["long_entry"].any()
     assert out["long_exit"].any()
     assert "vwap" in out.columns
-

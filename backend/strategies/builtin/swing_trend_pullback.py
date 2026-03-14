@@ -3,9 +3,10 @@ from __future__ import annotations
 import pandas as pd
 
 from strategies.base import BaseStrategy, StrategyParams
+from strategies.context import IndicatorContext, StrategyContext
 from indicators import atr, ema, rsi
-from strategies.models import ParameterSpec, StrategyCategory, StrategyMetadata, StrategySignals
-from strategies.utils import cross_above, cross_below, normalize_signal_frame
+from strategies.models import ParameterSpec, SignalResult, StrategyCategory, StrategyMetadata
+from strategies.utils import cross_above, cross_below
 
 
 class SwingTrendPullbackStrategy(BaseStrategy):
@@ -106,9 +107,15 @@ class SwingTrendPullbackStrategy(BaseStrategy):
             ),
         ]
 
-    def generate_signals(self, candles: pd.DataFrame, params: StrategyParams) -> StrategySignals:
-        self._validate_input(candles)
-        df = candles.copy()
+    def generate_signals(
+        self,
+        data: pd.DataFrame,
+        params: StrategyParams,
+        context: StrategyContext | None = None,
+        indicators: IndicatorContext | None = None,
+    ) -> SignalResult:
+        self._validate_input(data)
+        df = data.copy()
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=False)
         df = df.sort_values("timestamp").reset_index(drop=True)
 
@@ -116,36 +123,45 @@ class SwingTrendPullbackStrategy(BaseStrategy):
         high = df["high"].astype("float64")
         low = df["low"].astype("float64")
 
-        ema_fast = ema(close, int(params.values["ema_fast"]))
-        ema_slow = ema(close, int(params.values["ema_slow"]))
-        r = rsi(close, int(params.values["rsi_period"]))
+        ic = indicators or IndicatorContext()
+        ema_fast_period = int(params.values["ema_fast"])
+        ema_slow_period = int(params.values["ema_slow"])
+        rsi_period = int(params.values["rsi_period"])
 
-        trend = close > ema_slow
-        reclaim = cross_above(close, ema_fast)
-        entry = trend & reclaim & (r < float(params.values["rsi_entry_max"]))
+        ema_fast_s = ic.get(("ema", "close", ema_fast_period), lambda: ema(close, ema_fast_period))
+        ema_slow_s = ic.get(("ema", "close", ema_slow_period), lambda: ema(close, ema_slow_period))
+        r_s = ic.get(("rsi", "close", rsi_period), lambda: rsi(close, rsi_period))
 
-        exit_trend_break = cross_below(close, ema_fast)
-        exit_rsi = r > float(params.values["rsi_exit_min"])
-        exit_ = exit_trend_break | exit_rsi
+        trend = close > ema_slow_s
+        reclaim = cross_above(close, ema_fast_s)
+        entry = (trend & reclaim & (r_s < float(params.values["rsi_entry_max"]))).fillna(False).astype(bool)
 
-        out = pd.DataFrame(
+        exit_trend_break = cross_below(close, ema_fast_s)
+        exit_rsi = r_s > float(params.values["rsi_exit_min"])
+        exit_ = (exit_trend_break | exit_rsi).fillna(False).astype(bool)
+
+        stop_loss = None
+        if bool(params.values["use_atr_stop"]):
+            atr_period = int(params.values["atr_period"])
+            a = ic.get(("atr", atr_period), lambda: atr(high, low, close, atr_period))
+            stop_loss = (close - (a * float(params.values["atr_mult"]))).astype("float64")
+
+        ind_df = pd.DataFrame(
             {
-                "timestamp": df["timestamp"],
-                "long_entry": entry,
-                "long_exit": exit_,
-                "short_entry": False,
-                "short_exit": False,
-                "ema_fast": ema_fast,
-                "ema_slow": ema_slow,
-                "rsi": r,
+                "ema_fast": ema_fast_s,
+                "ema_slow": ema_slow_s,
+                "rsi": r_s,
             }
         )
-
-        if bool(params.values["use_atr_stop"]):
-            a = atr(high, low, close, int(params.values["atr_period"]))
-            out["long_stop"] = close - (a * float(params.values["atr_mult"]))
-        else:
-            out["long_stop"] = pd.NA
-
-        out = normalize_signal_frame(out)
-        return StrategySignals(frame=out)
+        false_s = pd.Series(False, index=entry.index)
+        return SignalResult(
+            timestamp=df["timestamp"],
+            indicators=ind_df,
+            long_entry=entry,
+            long_exit=exit_,
+            short_entry=false_s,
+            short_exit=false_s,
+            stop_loss=stop_loss,
+            take_profit=None,
+            metadata={"context": context.__dict__ if context else None},
+        )
