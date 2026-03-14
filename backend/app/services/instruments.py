@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime
 from typing import Protocol
 
 from app.services.repos.instruments import InstrumentRepository
@@ -8,6 +9,19 @@ from app.services.repos.instruments import InstrumentRepository
 
 class KiteInstrumentsClient(Protocol):
     def instruments(self) -> list[dict]: ...
+
+
+def _json_sanitize(value):  # type: ignore[no-untyped-def]
+    """Convert common non-JSON types returned by broker SDKs into JSON values."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(k): _json_sanitize(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_sanitize(v) for v in value]
+    return str(value)
 
 
 def normalize_kite_instrument(raw: dict) -> dict:
@@ -25,7 +39,7 @@ def normalize_kite_instrument(raw: dict) -> dict:
         "symbol": str(symbol),
         "name": raw.get("name"),
         "segment": raw.get("segment"),
-        "instrument_metadata": dict(raw),
+        "instrument_metadata": _json_sanitize(dict(raw)),
     }
 
 
@@ -44,4 +58,3 @@ class InstrumentService:
                 # Skip rows that don't match the expected schema.
                 continue
         return self.repo.upsert_many(normalized)
-

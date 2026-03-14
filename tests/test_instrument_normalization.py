@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from app.services.instruments import InstrumentService, normalize_kite_instrument
 
 
@@ -11,12 +13,14 @@ def test_normalize_kite_instrument_required_fields() -> None:
         "name": "Reliance Industries",
         "segment": "NSE",
         "tick_size": 0.05,
+        "expiry": date(2026, 3, 14),
     }
     out = normalize_kite_instrument(raw)
     assert out["broker_instrument_token"] == "123"
     assert out["exchange"] == "NSE"
     assert out["symbol"] == "RELIANCE"
     assert out["instrument_metadata"]["tick_size"] == 0.05
+    assert out["instrument_metadata"]["expiry"] == "2026-03-14"
 
 
 def test_instrument_service_sync_calls_repo_with_normalized_rows() -> None:
@@ -42,4 +46,3 @@ def test_instrument_service_sync_calls_repo_with_normalized_rows() -> None:
     assert n == 2
     assert repo.rows[0]["broker_instrument_token"] == "1"
     assert repo.rows[1]["symbol"] == "BBB"
-
