@@ -36,7 +36,10 @@
  where = ["backend"]
  include = ["app*", "data*"]
  
- [tool.pytest.ini_options]
- testpaths = ["tests"]
- python_files = ["test_*.py"]
- addopts = "-q"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
+markers = [
+  "integration: requires a running PostgreSQL database (SIGMALAB_TEST_DATABASE_URL)",
+]
