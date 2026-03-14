@@ -15,7 +15,7 @@ Important rule: strategy modules generate signals and metadata; simulation engin
 
 ## Current Phase
 
-PH2 – Data Engine: instrument master ingestion, historical OHLCV retrieval with pagination, timeframe abstraction/aggregation, watchlist persistence, and a MarketDataService interface.
+PH3 – Strategy Engine: strategy framework, indicator utilities, parameter schema/validation, strategy registry, and built-in strategies. (Built on the PH2 Data Engine foundation.)
 
 ## Core Features (Target)
 
@@ -126,6 +126,31 @@ PY
 - `GET /watchlists/{watchlist_id}/items`
 - `GET /market-data/candles?instrument_id=...&timeframe=45m&start=...&end=...` (requires Kite creds)
 
+## PH3 Strategy Engine
+
+PH3 adds a reusable strategy foundation that produces **pure, vectorized signals** and indicator overlays.
+
+Architecture:
+
+Strategy (pure signal generator)  
+↓  
+`SignalResult` (signals + indicators + optional stop/take-profit)  
+↓  
+Backtest Engine (PH4) generates trades and ledgers
+
+Strategies never call broker APIs directly; they consume MarketDataService-compatible candles and only output signals/metadata.
+
+Built-in strategies:
+
+- `swing_trend_pullback`
+- `intraday_vwap_pullback`
+
+PH3 API endpoints (dev):
+
+- `GET /strategies`
+- `GET /strategies/{slug}`
+- `POST /strategies/{slug}/validate`
+
 ## PH2 Sanity Script
 
 This repo includes a practical sanity script that demonstrates:
@@ -140,6 +165,16 @@ Example:
 ```bash
 source .venv/bin/activate
 .venv/bin/python scripts/test_data_engine.py --sync-instruments --symbol RELIANCE --exchange NSE --timeframe 45m --start 2026-01-01 --end 2026-01-15
+```
+
+## PH3 Sanity Script
+
+Strategy engine sanity (no broker calls, deterministic sample candles):
+
+```bash
+source .venv/bin/activate
+.venv/bin/python scripts/test_strategy_engine.py --slug swing_trend_pullback
+.venv/bin/python scripts/test_strategy_engine.py --slug intraday_vwap_pullback
 ```
 
 ## Documentation

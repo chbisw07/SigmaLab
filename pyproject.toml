@@ -32,9 +32,9 @@
  [tool.setuptools]
  package-dir = {"" = "backend"}
  
- [tool.setuptools.packages.find]
- where = ["backend"]
- include = ["app*", "data*"]
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["app*", "data*", "strategies*", "indicators*"]
  
 [tool.pytest.ini_options]
 testpaths = ["tests"]
