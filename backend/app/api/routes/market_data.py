@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_app_settings, get_db_session
 from app.core.settings import Settings
 from app.services.market_data import make_market_data_service
-from app.services.repos.instruments import InstrumentRepository
 
 from data.timeframe import Timeframe
 
@@ -27,9 +26,12 @@ def get_candles(
 ):
     try:
         tf = Timeframe.parse(timeframe)
-        svc = make_market_data_service(settings, repo=InstrumentRepository(session))
+        svc = make_market_data_service(settings, session=session)
         df = svc.get_candles(instrument_id=instrument_id, timeframe=tf, start=start, end=end)
-        return {"status": "ok", "candles": df.to_dict(orient="records")}
+        # Ensure timestamps are JSON-serializable.
+        out = df.copy()
+        if "timestamp" in out.columns:
+            out["timestamp"] = out["timestamp"].apply(lambda x: x.isoformat() if hasattr(x, "isoformat") else str(x))
+        return {"status": "ok", "candles": out.to_dict(orient="records")}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-

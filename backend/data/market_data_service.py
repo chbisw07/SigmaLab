@@ -16,6 +16,15 @@ class InstrumentTokenResolver(Protocol):
     def resolve(self, instrument_id: uuid.UUID) -> int | str: ...
 
 
+class BaseCandleStore(Protocol):
+    def upsert_base_candles(
+        self,
+        instrument_id: uuid.UUID,
+        base_interval: str,
+        candles: pd.DataFrame,
+    ) -> None: ...
+
+
 @dataclass(frozen=True)
 class MarketDataService:
     """Public entrypoint for market candles.
@@ -26,6 +35,7 @@ class MarketDataService:
     token_resolver: InstrumentTokenResolver
     fetcher: HistoricalFetcher
     aggregator: CandleAggregator
+    candle_store: BaseCandleStore | None = None
 
     def get_candles(
         self,
@@ -44,6 +54,15 @@ class MarketDataService:
             start=start,
             end=end,
         )
+
+        if self.candle_store is not None and not base_df.empty:
+            # Persist only base (broker-supported) candles. Higher timeframes are derived.
+            base_interval_str = base_interval.value if hasattr(base_interval, "value") else str(base_interval)
+            self.candle_store.upsert_base_candles(
+                instrument_id=instrument_id,
+                base_interval=base_interval_str,
+                candles=base_df,
+            )
 
         if not plan.needs_aggregation:
             return base_df
@@ -66,4 +85,3 @@ def _tf_from_kite_interval(interval) -> str:
     }
     key = interval.value if hasattr(interval, "value") else interval
     return m[key]
-
