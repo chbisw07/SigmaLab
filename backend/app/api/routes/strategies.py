@@ -38,6 +38,7 @@ def _param_to_dict(p: ParameterSpec) -> dict[str, Any]:
         "max": p.max,
         "step": p.step,
         "enum_values": list(p.enum_values) if p.enum_values else None,
+        "grid_values": list(p.grid_values) if p.grid_values else None,
     }
 
 
@@ -70,4 +71,3 @@ def validate_strategy_params(slug: str, params: dict[str, Any] | None = None) ->
         return {"status": "ok", "validated": validated}
     except (KeyError, ParameterValidationError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-

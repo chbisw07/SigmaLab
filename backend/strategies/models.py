@@ -47,6 +47,8 @@ class ParameterSpec:
     max: int | float | None = None
     step: int | float | None = None
     enum_values: tuple[str, ...] | None = None
+    # Optional explicit grid values (useful for optimization in PH5).
+    grid_values: tuple[Any, ...] | None = None
 
 
 @dataclass(frozen=True)
