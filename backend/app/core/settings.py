@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,13 +25,20 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+psycopg://sigmalab:sigmalab@localhost:5432/sigmalab"
     )
+    database_echo: bool = Field(default=False)
 
     # Placeholders for Kite credentials. Do not hardcode real secrets.
     kite_api_key: str | None = Field(default=None)
     kite_api_secret: str | None = Field(default=None)
 
+    @field_validator("database_url")
+    @classmethod
+    def _validate_database_url(cls, value: str) -> str:
+        if not value.startswith("postgresql"):
+            raise ValueError("SIGMALAB_DATABASE_URL must be a PostgreSQL URL (postgresql...)")
+        return value
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
