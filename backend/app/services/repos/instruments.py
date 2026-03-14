@@ -31,7 +31,9 @@ class InstrumentRepository:
                 }
             )
 
-        stmt = insert(Instrument).values(values)
+        # Use a Core insert against the Table, not the ORM entity, because the table has a
+        # column named "metadata" which would collide with SQLAlchemy ORM's `metadata`.
+        stmt = insert(Instrument.__table__).values(values)
         excluded = stmt.excluded
         stmt = stmt.on_conflict_do_update(
             constraint="uq_instruments_broker_token_exchange",
@@ -39,7 +41,8 @@ class InstrumentRepository:
                 "symbol": excluded.symbol,
                 "name": excluded.name,
                 "segment": excluded.segment,
-                "metadata": excluded.metadata,
+                # Column is named "metadata" which collides with SQLAlchemy's `.metadata` attr.
+                "metadata": excluded["metadata"],
                 "updated_at": func.now(),
             },
         )
