@@ -54,8 +54,8 @@ class Timeframe(str, enum.Enum):
     def parse(cls, value: str) -> "Timeframe":
         v = value.strip()
         # Normalize common variants: 1H -> 1h, 1d -> 1D, etc.
-        if re.fullmatch(r"\\d+[mMhHdDwW]", v):
-            num = re.findall(r"\\d+", v)[0]
+        if re.fullmatch(r"\d+[mMhHdDwW]", v):
+            num = re.findall(r"\d+", v)[0]
             unit = re.findall(r"[a-zA-Z]+", v)[0]
             if unit.lower() == "m":
                 v = f"{num}m"
@@ -113,4 +113,3 @@ class Timeframe(str, enum.Enum):
             return TimeframePlan(KiteInterval.D1, 1, calendar_rule="M")
 
         raise ValueError(f"Unsupported timeframe: {self.value}")
-
