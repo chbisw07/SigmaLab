@@ -2,6 +2,7 @@
 
 **Branch:** `feature/ph3-strategy-engine-enhancements`  
 **Generated:** 2026-03-15 01:34:30 +0530 (IST)
+**Location:** `docs/PH3_Review_Report.md` (kept under `docs/` alongside `docs/PH2_Review_Report.md`)
 
 ---
 
@@ -15,7 +16,7 @@ PH3 implements SigmaLab’s **Strategy Engine**: a reusable, testable framework 
 
 - **Branch name:** `feature/ph3-strategy-engine-enhancements`
 - **PH3 type:** PH3 enhancement pass (built on the previously implemented PH3 branch)
-- **HEAD commit:** `acfc34042f1e84dab75dede8d1d61806070b9587`
+- **HEAD commit (at time of report update):** `269937851691d3efa2965f7ef8b32f5fcbcab266`
 
 ---
 
@@ -236,4 +237,3 @@ Explicitly deferred to PH4 (Backtesting Engine):
 ## 13. Merge Readiness
 
 This branch appears **ready for product-owner review** and is structurally aligned with the PRD’s architecture rule that strategies generate signals while PH4 generates trades. Merge should proceed only after owner validation.
-
