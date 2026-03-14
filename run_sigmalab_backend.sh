@@ -33,6 +33,12 @@ fi
 # shellcheck disable=SC1091
 source ".venv/bin/activate"
 
+if ! python -c "import fastapi, sqlalchemy, alembic, pandas, kiteconnect" >/dev/null 2>&1; then
+  echo "Installing/updating Python dependencies in .venv..."
+  pip install --upgrade pip >/dev/null
+  pip install -r requirements-dev.txt
+fi
+
 if ! command -v psql >/dev/null 2>&1; then
   echo "psql not found. Install PostgreSQL client/server first:"
   echo "  sudo apt-get update"
@@ -87,4 +93,3 @@ alembic -c backend/alembic.ini upgrade head
 
 echo "Starting SigmaLab backend on http://127.0.0.1:8000 ..."
 exec uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-

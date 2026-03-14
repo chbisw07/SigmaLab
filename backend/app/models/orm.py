@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, Uuid, func
+from sqlalchemy import BigInteger, DateTime, Enum, Float, ForeignKey, Index, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -50,6 +50,13 @@ class BrokerConnection(Base, IdMixin, TimestampMixin):
 
 class Instrument(Base, IdMixin, TimestampMixin):
     __tablename__ = "instruments"
+    __table_args__ = (
+        UniqueConstraint(
+            "broker_instrument_token",
+            "exchange",
+            name="uq_instruments_broker_token_exchange",
+        ),
+    )
 
     broker_instrument_token: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     exchange: Mapped[str] = mapped_column(String(16), nullable=False)
@@ -59,6 +66,31 @@ class Instrument(Base, IdMixin, TimestampMixin):
     instrument_metadata: Mapped[dict] = mapped_column(
         "metadata", JSONB, default=dict, nullable=False
     )
+
+
+class Candle(Base, TimestampMixin):
+    """Base timeframe candle storage.
+
+    PH2 stores only base (broker-supported) intervals. Higher timeframes are produced via aggregation.
+    """
+
+    __tablename__ = "candles"
+    __table_args__ = (
+        # Critical lookup index for historical ranges.
+        Index("ix_candles_instrument_ts", "instrument_id", "ts"),
+    )
+
+    instrument_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("instruments.id"), primary_key=True
+    )
+    base_interval: Mapped[str] = mapped_column(String(16), primary_key=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+
+    open: Mapped[float] = mapped_column(Float, nullable=False)
+    high: Mapped[float] = mapped_column(Float, nullable=False)
+    low: Mapped[float] = mapped_column(Float, nullable=False)
+    close: Mapped[float] = mapped_column(Float, nullable=False)
+    volume: Mapped[int | None] = mapped_column(BigInteger)
 
 
 class Watchlist(Base, IdMixin, TimestampMixin):
@@ -74,6 +106,13 @@ class Watchlist(Base, IdMixin, TimestampMixin):
 
 class WatchlistItem(Base, IdMixin, TimestampMixin):
     __tablename__ = "watchlist_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "watchlist_id",
+            "instrument_id",
+            name="uq_watchlist_items_watchlist_instrument",
+        ),
+    )
 
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("watchlists.id"), nullable=False, index=True
