@@ -977,6 +977,159 @@ This separation ensures SigmaLab remains both:
 
 ---
 
+## Data Architecture Roadmap
+
+### Core Data Principles
+
+- Store **base timeframe candles only**
+- Higher timeframes are produced by **aggregation**
+- Historical data fetching must support **automatic pagination**
+- Strategies and backtesting engines must NOT call broker APIs directly
+- All data access must go through **MarketDataService**
+
+**Strategy modules and backtesting engines must obtain market data exclusively via MarketDataService.**
+
+### Candle Storage Strategy
+
+SigmaLab stores only **base timeframe** candles (the smallest persisted unit). Higher timeframes (e.g., 5m, 15m, 45m, 1h) are generated dynamically via aggregation.
+
+Example:
+
+- 1 minute candles stored
+- 5m / 15m / 45m / 1h generated dynamically
+
+Recommended schema example:
+
+```sql
+CREATE TABLE candle_1m (
+    instrument_id BIGINT NOT NULL,
+    ts TIMESTAMP NOT NULL,
+    open DOUBLE PRECISION NOT NULL,
+    high DOUBLE PRECISION NOT NULL,
+    low DOUBLE PRECISION NOT NULL,
+    close DOUBLE PRECISION NOT NULL,
+    volume BIGINT,
+    PRIMARY KEY (instrument_id, ts)
+);
+```
+
+Critical index example:
+
+```sql
+CREATE INDEX idx_candle_symbol_time
+ON candle_1m(instrument_id, ts);
+```
+
+Storing only base timeframe candles avoids duplicating the same market history across many derived timeframes.
+
+### Data Pipeline
+
+Intended data pipeline:
+
+Kite API  
+↓  
+HistoricalFetcher  
+↓  
+Base Candle Storage (PostgreSQL)  
+↓  
+MarketDataService  
+↓  
+Timeframe Aggregation  
+↓  
+Strategy Engine / Backtest Engine
+
+HistoricalFetcher handles pagination automatically.
+
+### Historical Fetch Strategy
+
+Kite historical API has maximum range limits per request depending on interval. SigmaLab must:
+
+- split large date ranges
+- call broker API multiple times
+- merge results
+- deduplicate candles
+- sort timestamps
+
+This logic must exist inside `historical_fetcher`.
+
+### Timeframe Aggregation
+
+Supported user timeframes:
+
+- 1m
+- 3m
+- 5m
+- 10m
+- 15m
+- 30m
+- 45m
+- 1h
+- 2h
+- 4h
+- 1D
+- 1W
+- 1M
+
+Aggregation examples:
+
+- 45m = 3 × 15m candles
+- 2h = 2 × 60m candles
+
+Aggregation rules:
+
+- open = first candle open
+- high = max(high)
+- low = min(low)
+- close = last candle close
+- volume = sum(volume)
+
+Aggregation is implemented in `candle_aggregator`.
+
+### Phase Implementation Plan
+
+PH2 – Data Engine
+
+- instrument master ingestion
+- watchlist persistence
+- historical_fetcher
+- timeframe abstraction
+- candle_aggregator
+- MarketDataService
+- PostgreSQL schema and indexes
+
+PH3 – Strategy Engine
+
+- strategy framework
+- indicator library
+- signal generation
+
+PH4 – Backtesting Engine
+
+- replay simulation engine
+- trade ledger persistence
+- performance metrics
+- candle caching layer
+
+Example cache:
+
+`CandleCache[(instrument_id, timeframe)] → dataframe`
+
+PH5 – Optimization Engine
+
+- vectorized research engine
+- parameter sweep engine
+- optimization result storage
+- strategy ranking
+
+### Future Performance Enhancements
+
+Intentionally deferred to PH4/PH5:
+
+- candle caching
+- dataset reuse during optimization
+- vectorized research engine
+- PostgreSQL partitioning if data volume grows
+
 ## 15. Recommended domain model
 
 ### Entities
