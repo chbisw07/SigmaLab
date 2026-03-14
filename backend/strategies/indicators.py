@@ -20,8 +20,14 @@ def rsi(close: pd.Series, period: int = 14) -> pd.Series:
     avg_gain = gain.ewm(alpha=1.0 / period, adjust=False, min_periods=period).mean()
     avg_loss = loss.ewm(alpha=1.0 / period, adjust=False, min_periods=period).mean()
 
-    rs = avg_gain / avg_loss.replace(0.0, pd.NA)
+    # Keep results numeric (float64) and avoid pd.NA/object dtype.
+    avg_loss_safe = avg_loss.where(avg_loss != 0.0, other=1e-12)
+    rs = (avg_gain / avg_loss_safe).astype("float64")
     out = 100.0 - (100.0 / (1.0 + rs))
+
+    # Flat periods (no gains, no losses) are conventionally RSI=50.
+    flat = (avg_gain == 0.0) & (avg_loss == 0.0)
+    out = out.where(~flat, other=50.0)
     return out.astype("float64")
 
 
@@ -91,4 +97,3 @@ def adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> 
 
     dx = (100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0.0, pd.NA)).astype("float64")
     return dx.ewm(alpha=1.0 / period, adjust=False, min_periods=period).mean()
-
