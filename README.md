@@ -15,7 +15,7 @@ Important rule: strategy modules generate signals and metadata; simulation engin
 
 ## Current Phase
 
-PH1 – Foundation: backend scaffolding, configuration, logging, database foundation, domain model skeletons, and a small pytest suite.
+PH2 – Data Engine: instrument master ingestion, historical OHLCV retrieval with pagination, timeframe abstraction/aggregation, watchlist persistence, and a MarketDataService interface.
 
 ## Core Features (Target)
 
@@ -66,9 +66,15 @@ Run tests:
 .venv/bin/pytest
 ```
 
-## Database & Migrations (PH1)
+PostgreSQL integration tests (optional):
 
-PostgreSQL is the intended system of record for SigmaLab. PH1 scaffolds SQLAlchemy models and Alembic.
+```bash
+SIGMALAB_TEST_DATABASE_URL="postgresql+psycopg://sigmalab:sigmalab@localhost:5432/sigmalab" .venv/bin/pytest -m integration
+```
+
+## Database & Migrations
+
+PostgreSQL is the intended system of record for SigmaLab. Alembic migrations are provided for PH1 and PH2 schema needs.
 
 Example Alembic commands:
 
@@ -78,6 +84,18 @@ Example Alembic commands:
 ```
 
 Note: PH1 does not require a running PostgreSQL instance to boot the API and run tests.
+
+## PH2 API Endpoints (Dev)
+
+- `POST /instruments/sync` (requires `SIGMALAB_KITE_API_KEY` + `SIGMALAB_KITE_ACCESS_TOKEN`)
+- `GET /watchlists`
+- `POST /watchlists`
+- `PATCH /watchlists/{watchlist_id}`
+- `DELETE /watchlists/{watchlist_id}`
+- `POST /watchlists/{watchlist_id}/items/{instrument_id}`
+- `DELETE /watchlists/{watchlist_id}/items/{instrument_id}`
+- `GET /watchlists/{watchlist_id}/items`
+- `GET /market-data/candles?instrument_id=...&timeframe=45m&start=...&end=...` (requires Kite creds)
 
 ## Documentation
 
