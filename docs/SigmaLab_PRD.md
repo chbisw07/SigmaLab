@@ -223,12 +223,12 @@ This mirrors SigmaTrader’s style closely enough to reduce user learning cost.
 
 ## 11. Detailed module requirements
 
-# 11.1 Dashboard
+### 11.1 Dashboard
 
-## Purpose
+#### Purpose
 Give the user an immediate overview of recent research activity.
 
-## Dashboard widgets
+#### Dashboard widgets
 
 1. Recent backtest runs
 2. Best recent strategies by selected metric
@@ -241,19 +241,19 @@ Give the user an immediate overview of recent research activity.
    - Run backtest
    - Open latest result
 
-## Acceptance criteria
+#### Acceptance criteria
 
 - User can reach the latest useful artifacts in 1–2 clicks.
 - Dashboard displays status of Kite connectivity and instrument sync freshness.
 
 ---
 
-# 11.2 Settings
+### 11.2 Settings
 
-## Purpose
+#### Purpose
 Provide app settings, especially broker/data connectivity.
 
-## Requirement: match SigmaTrader’s broker settings UX
+#### Requirement: match SigmaTrader’s broker settings UX
 
 SigmaLab should include **the same Zerodha/Kite broker settings experience and visual layout pattern** as SigmaTrader, especially for:
 
@@ -264,7 +264,7 @@ SigmaLab should include **the same Zerodha/Kite broker settings experience and v
 - save/edit/delete row actions
 - visible broker health / data availability state
 
-### Zerodha/Kite settings requirements
+##### Zerodha/Kite settings requirements
 
 Fields and controls:
 
@@ -280,18 +280,18 @@ Fields and controls:
   - connected / not connected
   - market data available / unavailable
 
-### Behavior
+##### Behavior
 
 - secrets must be stored securely, never logged in plain text
 - “Show” must reveal only on explicit user action
 - connection test should validate broker session and data availability
 - expired sessions should surface a clear reconnect state
 
-### Future-ready
+##### Future-ready
 
 The structure should allow additional brokers later, but Zerodha/Kite is v1 priority.
 
-## Additional settings tabs
+#### Additional settings tabs
 
 - General
 - Data
@@ -302,12 +302,12 @@ The structure should allow additional brokers later, but Zerodha/Kite is v1 prio
 
 ---
 
-# 11.3 Instruments
+### 11.3 Instruments
 
-## Purpose
+#### Purpose
 Maintain broker-derived instrument master and enable symbol selection.
 
-## Features
+#### Features
 
 1. Pull instrument list from Zerodha/Kite.
 2. Store normalized instrument metadata.
@@ -319,7 +319,7 @@ Maintain broker-derived instrument master and enable symbol selection.
 4. Mark active vs inactive instruments.
 5. Allow user to add instruments to watchlists.
 
-## Data fields
+#### Data fields
 
 - instrument_token
 - exchange_token
@@ -334,19 +334,19 @@ Maintain broker-derived instrument master and enable symbol selection.
 - strike (future-ready)
 - last sync time
 
-## Acceptance criteria
+#### Acceptance criteria
 
 - User can search and add symbols quickly.
 - Instrument sync is idempotent and repeatable.
 
 ---
 
-# 11.4 Watchlists
+### 11.4 Watchlists
 
-## Purpose
+#### Purpose
 Create reusable symbol groups for backtests.
 
-## Features
+#### Features
 
 1. Create watchlist
 2. Rename watchlist
@@ -356,37 +356,37 @@ Create reusable symbol groups for backtests.
 6. Copy watchlist
 7. Optional tags (e.g. swing candidates, intraday liquid, defense, banking)
 
-## UX expectations
+#### UX expectations
 
 - fast symbol picker with search
 - visible watchlist count
 - preview of constituent symbols
 - sorting and filtering
 
-## Backtest relevance
+#### Backtest relevance
 
 User should be able to select one or more watchlists as a backtest universe.
 
-## Acceptance criteria
+#### Acceptance criteria
 
 - Watchlists are first-class objects.
 - Watchlist membership is versioned enough to reproduce old runs.
 
 ---
 
-# 11.5 Strategies
+### 11.5 Strategies
 
-## Purpose
+#### Purpose
 Maintain a catalog of strategy definitions and configurations.
 
-## Strategy types in v1
+#### Strategy types in v1
 
 1. Rules-based Python strategies
 2. Long-only swing strategies
 3. Long-only intraday strategies
 4. Optional future support for shorting, MIS, or derivatives
 
-## Strategy object should include
+#### Strategy object should include
 
 - name
 - slug
@@ -408,9 +408,9 @@ Maintain a catalog of strategy definitions and configurations.
   - validated
   - archived
 
-## Strategy UX
+#### Strategy UX
 
-### Strategy list page
+##### Strategy list page
 
 Columns:
 - Strategy name
@@ -421,7 +421,7 @@ Columns:
 - Default metric summary
 - Actions
 
-### Strategy detail page
+##### Strategy detail page
 
 Sections:
 - overview
@@ -431,7 +431,7 @@ Sections:
 - recent runs
 - notes
 
-## Important design choice
+#### Important design choice
 
 For v1, strategy execution code should live in Python modules, while the UI manages metadata and parameter configuration.
 
@@ -439,12 +439,12 @@ This is much more reliable than inventing a custom DSL too early.
 
 ---
 
-# 11.6 Strategy parameters
+### 11.6 Strategy parameters
 
-## Purpose
+#### Purpose
 Make parameters explicit, editable, and tunable.
 
-## Parameter types
+#### Parameter types
 
 - int
 - float
@@ -452,7 +452,7 @@ Make parameters explicit, editable, and tunable.
 - enum
 - timeframe selector (optional)
 
-## Examples
+#### Examples
 
 - fast_ema_length
 - slow_ema_length
@@ -463,7 +463,7 @@ Make parameters explicit, editable, and tunable.
 - max_holding_days
 - session_start / session_end for intraday
 
-## Required metadata per parameter
+#### Required metadata per parameter
 
 - key
 - label
@@ -474,7 +474,7 @@ Make parameters explicit, editable, and tunable.
 - description
 - tunable flag
 
-## UX expectations
+#### UX expectations
 
 - inline edit form
 - reset to default
@@ -483,12 +483,12 @@ Make parameters explicit, editable, and tunable.
 
 ---
 
-# 11.7 Backtests
+### 11.7 Backtests
 
-## Purpose
+#### Purpose
 Run a strategy against a watchlist and inspect results.
 
-## Run configuration inputs
+#### Run configuration inputs
 
 - strategy
 - strategy version
@@ -504,9 +504,9 @@ Run a strategy against a watchlist and inspect results.
 - square-off rules for intraday
 - max concurrent positions (future-ready if not v1)
 
-## Run outputs
+#### Run outputs
 
-### Portfolio-level metrics
+##### Portfolio-level metrics
 
 - net return
 - CAGR
@@ -520,7 +520,7 @@ Run a strategy against a watchlist and inspect results.
 - exposure
 - time in market
 
-### Symbol-level metrics
+##### Symbol-level metrics
 
 - return
 - number of trades
@@ -529,7 +529,7 @@ Run a strategy against a watchlist and inspect results.
 - max drawdown
 - expectancy
 
-### Trade-level outputs
+##### Trade-level outputs
 
 - symbol
 - entry date/time
@@ -544,28 +544,28 @@ Run a strategy against a watchlist and inspect results.
 - exit reason
 - tags
 
-## Acceptance criteria
+#### Acceptance criteria
 
 - Every backtest run is reproducible from persisted configuration.
 - User can compare multiple runs side by side.
 
 ---
 
-# 11.8 Backtest charts
+### 11.8 Backtest charts
 
-## Purpose
+#### Purpose
 Visually validate whether the strategy behaves sensibly.
 
-## Chart types required in v1
+#### Chart types required in v1
 
-### A. Equity curve
+##### A. Equity curve
 - overall equity curve
 - optional benchmark comparison later
 
-### B. Drawdown chart
+##### B. Drawdown chart
 - drawdown over time
 
-### C. Price chart with annotations
+##### C. Price chart with annotations
 For a selected symbol and trade instance, show:
 
 - candlesticks or OHLC
@@ -576,10 +576,10 @@ For a selected symbol and trade instance, show:
 - overlay indicators used by strategy
 - optional stop/target lines if available
 
-### D. Monthly/periodic returns chart
+##### D. Monthly/periodic returns chart
 - bar chart or heatmap
 
-## Critical UX requirement
+#### Critical UX requirement
 
 On detailed chart view, the user should be able to inspect:
 
@@ -593,14 +593,14 @@ On detailed chart view, the user should be able to inspect:
   - target hit
   - square off
 
-## Suggested interactions
+#### Suggested interactions
 
 - hover tooltip on markers
 - filter to show only entry/exit markers
 - toggle indicator overlays
 - select a trade from table and center chart on it
 
-## Recommended charting approach
+#### Recommended charting approach
 
 Frontend should use a chart library suitable for financial charting. Likely options:
 
@@ -612,12 +612,12 @@ Frontend should use a chart library suitable for financial charting. Likely opti
 
 ---
 
-# 11.9 Trade table
+### 11.9 Trade table
 
-## Purpose
+#### Purpose
 Provide auditability and explainability.
 
-## Required columns
+#### Required columns
 
 - Symbol
 - Entry time
@@ -631,7 +631,7 @@ Provide auditability and explainability.
 - Exit reason
 - Strategy version
 
-## Interactions
+#### Interactions
 
 - sort
 - filter
@@ -640,17 +640,17 @@ Provide auditability and explainability.
 
 ---
 
-# 11.10 Optimization / parameter tuning
+### 11.10 Optimization / parameter tuning
 
-## Purpose
+#### Purpose
 Support robust tuning instead of blind curve fitting.
 
-## v1 optimization modes
+#### v1 optimization modes
 
 1. Grid search
 2. Limited random search (optional)
 
-## v1 tuning requirements
+#### v1 tuning requirements
 
 - user selects tunable params
 - user defines ranges
@@ -659,14 +659,14 @@ Support robust tuning instead of blind curve fitting.
 - best combinations shown by selected metric
 - user can save a discovered parameter set as a preset
 
-## Strong requirement
+#### Strong requirement
 
 Optimization UI should emphasize **robustness**:
 
 - not only best return
 - also consider drawdown, number of trades, and stability
 
-## Recommended metrics for ranking options
+#### Recommended metrics for ranking options
 
 - net return
 - profit factor
@@ -674,7 +674,7 @@ Optimization UI should emphasize **robustness**:
 - expectancy
 - composite score
 
-## Nice-to-have (v1.1 or v2)
+#### Nice-to-have (v1.1 or v2)
 
 - walk-forward analysis
 - train/test split
@@ -683,12 +683,12 @@ Optimization UI should emphasize **robustness**:
 
 ---
 
-# 11.11 Analytics
+### 11.11 Analytics
 
-## Purpose
+#### Purpose
 Help the user judge whether a strategy is trustworthy.
 
-## v1 analytics
+#### v1 analytics
 
 - per-symbol contribution
 - distribution of trade returns
@@ -698,7 +698,7 @@ Help the user judge whether a strategy is trustworthy.
 - drawdown episodes
 - best/worst symbols
 
-## Goal
+#### Goal
 Help identify false-positive-heavy or regime-dependent strategies.
 
 ---
@@ -775,30 +775,30 @@ SigmaLab shall support comparing multiple backtest runs.
 
 ## 14. Technical architecture recommendation
 
-## Recommended stack
+### Recommended stack
 
-### Frontend
+#### Frontend
 - React
 - TypeScript
 - MUI or the UI stack already used by SigmaTrader frontend
 - TanStack Query for server state
 - ECharts / Lightweight Charts for charting
 
-### Backend API
+#### Backend API
 - Python FastAPI
 
-### Backtesting engine
+#### Backtesting engine
 - **VectorBT recommended for v1 research speed**
 - Backtrader can be considered later if execution-model realism becomes more important
 
-### Data layer
+#### Data layer
 - Zerodha/Kite historical data adapter
-- PostgreSQL or SQLite for v1; PostgreSQL preferred if aligning with SigmaTrader direction
+- PostgreSQL for v1 as the primary application database. SQLite may be used only for lightweight throwaway local prototyping, but it is not the intended persisted application database.
 
-### Async jobs
+#### Async jobs
 - RQ / Celery / lightweight job runner depending on existing infra
 
-### Storage domains
+#### Storage domains
 - broker settings / secrets
 - instrument master
 - watchlists
@@ -807,6 +807,173 @@ SigmaLab shall support comparing multiple backtest runs.
 - backtest runs
 - optimization jobs
 - chart/trade artifacts
+
+SigmaLab will persist broker settings metadata, instruments, watchlists, strategies, parameter presets, backtest runs, trade ledgers, optimization jobs, and visualization metadata. Because SigmaLab will run async backtests and optimization jobs and persist research artifacts, PostgreSQL is the preferred system of record. SQLite is intentionally not the primary production or long-lived application database.
+
+---
+
+## 14A. Recommended SigmaLab Architecture
+
+SigmaLab should adopt a **layered, dual-engine architecture** so that it can be both:
+
+- fast enough for research and parameter sweeps
+- accurate enough for detailed trade reconstruction and chart explainability
+
+This is a critical architectural decision for SigmaLab.
+
+### Architecture rationale
+
+A single monolithic backtesting engine would create one of two problems:
+
+1. it would be too slow for watchlist-wide research and optimization, or
+2. it would be fast but weak in trade-by-trade explainability, close reasons, and chart replay
+
+To avoid this, SigmaLab should separate:
+
+- **Research Engine** for fast experimentation
+- **Replay / Simulation Engine** for detailed validation
+
+This separation ensures SigmaLab remains both:
+- efficient for strategy research
+- trustworthy for visual inspection and trade auditability
+
+**Important rule:** **Strategy modules generate signals and metadata; simulation engines generate trades.**
+
+---
+
+### High-Level Architecture Diagram
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│                              SigmaLab                                │
+│        Strategy Research & Backtesting Workbench for SigmaTrader     │
+└──────────────────────────────────────────────────────────────────────┘
+
+                ┌────────────────────────────────────┐
+                │          Frontend (React)          │
+                │------------------------------------│
+                │ Dashboard                          │
+                │ Strategies                         │
+                │ Watchlists                         │
+                │ Backtests                          │
+                │ Optimization                       │
+                │ Visualization / Reporting          │
+                │ Settings                           │
+                └────────────────────────────────────┘
+                                  │
+                                  │ REST / WebSocket / Async Job Status
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                         Backend API (FastAPI)                        │
+│----------------------------------------------------------------------│
+│ API Routers                                                          │
+│ - settings                                                           │
+│ - instruments                                                        │
+│ - watchlists                                                         │
+│ - strategies                                                         │
+│ - backtests                                                          │
+│ - optimization                                                       │
+│ - visualization                                                      │
+│ - system / health                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                       Application / Service Layer                    │
+│----------------------------------------------------------------------│
+│ BrokerConnectionService                                              │
+│ InstrumentService                                                    │
+│ WatchlistService                                                     │
+│ StrategyRegistryService                                              │
+│ BacktestRunService                                                   │
+│ OptimizationService                                                  │
+│ VisualizationService                                                 │
+│ ReportService                                                        │
+└──────────────────────────────────────────────────────────────────────┘
+          │                    │                    │
+          │                    │                    │
+          ▼                    ▼                    ▼
+
+┌──────────────────────┐  ┌──────────────────────┐  ┌───────────────────┐
+│   Data Layer         │  │   Strategy Layer     │  │   Job Layer        │
+│----------------------│  │----------------------│  │-------------------│
+│ Broker adapters      │  │ Strategy base class  │  │ Async job runner   │
+│ Kite historical data │  │ Strategy metadata    │  │ Backtest jobs      │
+│ Instrument sync      │  │ Parameter schemas    │  │ Optimization jobs  │
+│ OHLCV storage        │  │ Indicator library    │  │ Progress updates   │
+│ Watchlist storage    │  │ Signal generation    │  │ Result persistence │
+└──────────────────────┘  └──────────────────────┘  └───────────────────┘
+          │                    │
+          │                    │
+          └──────────────┬─────┘
+                         ▼
+        ┌──────────────────────────────────────────────┐
+        │         Research Engine (Vectorized)         │
+        │----------------------------------------------│
+        │ Purpose: fast watchlist-wide research        │
+        │                                              │
+        │ Inputs:                                      │
+        │ - OHLCV data                                 │
+        │ - strategy definition                        │
+        │ - parameter ranges                           │
+        │                                              │
+        │ Outputs:                                     │
+        │ - summary metrics                            │
+        │ - ranked candidate runs                      │
+        │ - parameter sweep results                    │
+        │ - symbol-level performance                   │
+        └──────────────────────────────────────────────┘
+                         │
+                         │ selected candidate run
+                         ▼
+        ┌──────────────────────────────────────────────┐
+        │     Replay / Simulation Engine (Event)       │
+        │----------------------------------------------│
+        │ Purpose: detailed trade reconstruction       │
+        │                                              │
+        │ Inputs:                                      │
+        │ - chosen strategy                            │
+        │ - chosen params                              │
+        │ - chosen watchlist / symbol                  │
+        │ - historical candles                         │
+        │                                              │
+        │ Outputs:                                     │
+        │ - trade ledger                               │
+        │ - entry/exit timestamps                      │
+        │ - close reasons                              │
+        │ - marker annotations                         │
+        │ - detailed replay-ready artifacts            │
+        └──────────────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────────────┐
+        │       Visualization / Reporting Layer        │
+        │----------------------------------------------│
+        │ Equity curve                                 │
+        │ Drawdown chart                               │
+        │ Trade table                                  │
+        │ Annotated price chart                        │
+        │ Indicator overlays                           │
+        │ Optimization result tables                   │
+        │ Export CSV / reports                         │
+        └──────────────────────────────────────────────┘
+                         │
+                         ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                          Persistence Layer                           │
+│----------------------------------------------------------------------│
+│ PostgreSQL                                                           │
+│ - broker connections                                                 │
+│ - instruments                                                        │
+│ - watchlists                                                         │
+│ - strategies                                                         │
+│ - parameter presets                                                  │
+│ - backtest runs                                                      │
+│ - trade ledger                                                       │
+│ - optimization jobs                                                  │
+│ - visualization artifacts / metadata                                 │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -960,7 +1127,7 @@ Runs should store enough metadata to know:
 
 ## 18. Detailed UX flows
 
-# 18.1 First-time setup flow
+### 18.1 First-time setup flow
 
 1. User opens SigmaLab.
 2. User lands on Dashboard or Settings prompt.
@@ -975,7 +1142,7 @@ Success criteria: first useful backtest in under 15 minutes.
 
 ---
 
-# 18.2 Create watchlist flow
+### 18.2 Create watchlist flow
 
 1. Open Watchlists.
 2. Click New watchlist.
@@ -986,7 +1153,7 @@ Success criteria: first useful backtest in under 15 minutes.
 
 ---
 
-# 18.3 Create strategy preset flow
+### 18.3 Create strategy preset flow
 
 1. Open Strategies.
 2. Select strategy.
@@ -996,7 +1163,7 @@ Success criteria: first useful backtest in under 15 minutes.
 
 ---
 
-# 18.4 Run backtest flow
+### 18.4 Run backtest flow
 
 1. Open Backtests.
 2. Click New backtest.
@@ -1011,7 +1178,7 @@ Success criteria: first useful backtest in under 15 minutes.
 
 ---
 
-# 18.5 Inspect trade flow
+### 18.5 Inspect trade flow
 
 1. Open a completed run.
 2. Go to Trades tab.
@@ -1022,7 +1189,7 @@ Success criteria: first useful backtest in under 15 minutes.
 
 ---
 
-# 18.6 Optimization flow
+### 18.6 Optimization flow
 
 1. Open Optimization.
 2. Pick strategy + watchlist + date range.
@@ -1180,45 +1347,142 @@ Mitigation:
 
 ---
 
-## 24. Milestones / phased delivery plan
+## 24. Correct Development Order
 
-### Phase 1 — Foundation
+SigmaLab should be implemented in the following order:
 
-- project scaffold
-- shared design language with SigmaTrader
-- settings page
-- Zerodha/Kite connection flow
-- instrument sync
-- watchlist CRUD
+### PH1 — Foundation
 
-### Phase 2 — Core strategy and backtesting
+Core scaffolding.
 
-- strategy catalog
-- parameter presets
-- backtest run form
-- historical data adapter
-- vectorbt integration
-- summary result page
+Includes:
 
-### Phase 3 — Visual validation
+* project structure
+* backend FastAPI setup
+* frontend React scaffold
+* database models
+* configuration framework
+* logging
+* environment management
 
-- equity curve
-- drawdown chart
-- trades table
-- detailed symbol chart with markers and reasons
+---
 
-### Phase 4 — Optimization
+### PH2 — Data Engine
 
-- range-based parameter tuning
-- sortable results
-- save preset from optimization result
+Market data foundation.
 
-### Phase 5 — Polish and future hooks
+Includes:
 
-- comparisons
-- exports
-- analytics improvements
-- SigmaTrader interoperability hooks
+* Zerodha/Kite integration
+* instrument master sync
+* OHLCV historical data fetch
+* symbol metadata storage
+* data adapter layer
+* watchlist data access
+
+---
+
+### PH3 — Strategy Engine
+
+Strategy definition framework.
+
+Includes:
+
+* Python strategy interface
+* parameter schema definition
+* signal generation model
+* indicator computation utilities
+* strategy registry
+* strategy metadata
+
+---
+
+### PH4 — Backtesting Engine
+
+Core simulation engine.
+
+Includes:
+
+* vectorized research engine
+* trade generation
+* equity curve computation
+* metrics generation
+* trade ledger creation
+* run metadata persistence
+
+---
+
+### PH8 — Visualization and Reporting
+
+Validation layer.
+
+Includes:
+
+* equity curve chart
+* drawdown chart
+* trade table
+* symbol performance table
+* annotated price charts
+* indicator overlays
+* trade markers
+
+---
+
+### PH6 — Frontend UX
+
+Full user experience.
+
+Includes:
+
+* dashboard
+* strategies UI
+* watchlists UI
+* backtest run UI
+* results pages
+* trade detail chart
+* settings UX
+
+---
+
+### PH5 — Optimization Engine
+
+Parameter research.
+
+Includes:
+
+* grid search
+* parameter range definition
+* optimization job execution
+* sortable results
+* preset saving
+
+---
+
+### PH7 — Broker Integration
+
+Broker connectivity for future execution.
+
+Includes:
+
+* Zerodha/Kite credential management
+* connection testing
+* broker metadata
+* future SigmaTrader interoperability
+
+---
+
+### PH9 — Deployment and Ops
+
+Production readiness.
+
+Includes:
+
+* Docker
+* environment configuration
+* logging
+* monitoring
+* CI/CD
+* backup strategy
 
 ---
 
@@ -1303,11 +1567,11 @@ backend/app/backtesting/
 
 These can be finalized during implementation:
 
-1. SQLite vs PostgreSQL for v1 local storage
-2. ECharts vs Lightweight Charts for detailed symbol chart
-3. Exact backtest engine abstraction around VectorBT
-4. Whether to support benchmark overlays in v1 or v1.1
-5. How much auth is needed for a single-user first deployment
+1. ECharts vs Lightweight Charts for detailed symbol chart
+2. Exact backtest engine abstraction around VectorBT
+3. Whether to support benchmark overlays in v1 or v1.1
+4. How much auth is needed for a single-user first deployment
+5. Whether SQLite convenience mode should be supported later for local-only experimentation as a low-priority future convenience, not a v1 architectural decision
 
 ---
 
@@ -1340,4 +1604,3 @@ Start implementation with this exact sequence:
 7. Add tuning
 
 This yields a usable product quickly and avoids getting stuck in architecture-only work.
-
