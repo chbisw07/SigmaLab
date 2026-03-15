@@ -9,9 +9,12 @@ from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
 from app.backtesting.candle_cache import CandleCache
+from app.backtesting.indicator_cache import IndicatorCache
 from app.backtesting.metrics import combine_equity_curves, compute_metrics
 from app.backtesting.models import ExecutionAssumptions, Trade
+from app.backtesting.prepared_input import PreparedBacktestInput, PreparedSymbolInput, normalize_candles
 from app.backtesting.replay_engine import ReplayEngine
+from app.backtesting.strategy_evaluator import StrategyEvaluator
 from app.models.orm import BacktestRunStatus
 from app.services.market_data import make_market_data_service
 from app.services.repos.backtests import BacktestRepository
@@ -114,7 +117,15 @@ class BacktestRunService:
         repo.set_status(run_row.id, status=BacktestRunStatus.RUNNING, started_at=started_at)
 
         try:
-            cache = CandleCache()
+            prepared = self._prepare_input(
+                strategy_slug=strategy_slug,
+                timeframe=tf.value,
+                start=start,
+                end=end,
+                instruments=instruments,
+            )
+            ind_cache = IndicatorCache()
+            evaluator = StrategyEvaluator(indicator_cache=ind_cache)
             engine = self.replay_engine
 
             all_trades_rows: list[dict] = []
@@ -122,32 +133,28 @@ class BacktestRunService:
             per_symbol_metrics: list[tuple[str, dict[str, Any], list[dict], list[dict]]] = []
             per_symbol_equity: list[list] = []
 
-            for inst in instruments:
-                sym = inst.symbol
-                try:
-                    candles = cache.get(
-                        self.market_data_service,
-                        instrument_id=inst.id,
-                        timeframe=tf,
-                        start=start,
-                        end=end,
-                    )
-                except Exception as e:
-                    # Make data issues actionable (e.g. invalid Kite token for a specific symbol).
-                    raise RuntimeError(f"Failed to fetch candles for {sym} ({inst.id}): {e}") from e
+            for sym_input in prepared.symbols:
+                sym = sym_input.symbol
+                candles = sym_input.candles
                 if candles is None or candles.empty:
                     continue
 
-                # Enforce expected candle shape for strategy + replay.
-                candles = candles[["timestamp", "open", "high", "low", "close", "volume"]].copy()
                 ctx = StrategyContext(symbol=sym, timeframe=tf.value, start_date=start, end_date=end)
-                sig = strat.generate_signals(candles, params=validated_params, context=ctx)  # type: ignore[arg-type]
+                sig = evaluator.evaluate(
+                    strategy=strat,
+                    instrument_id=sym_input.instrument_id,
+                    symbol=sym,
+                    timeframe=tf.value,
+                    candles=candles,
+                    params=validated_params,
+                    context=ctx,
+                )
                 replay = engine.run(
                     candles,
                     sig,
                     metadata=detail.metadata,
                     symbol=sym,
-                    instrument_id=inst.id,
+                    instrument_id=sym_input.instrument_id,
                     run_id=run_row.id,
                 )
 
@@ -203,6 +210,50 @@ class BacktestRunService:
         except Exception:
             repo.set_status(run_row.id, status=BacktestRunStatus.FAILED, completed_at=_utcnow())
             raise
+
+    def _prepare_input(
+        self,
+        *,
+        strategy_slug: str,
+        timeframe: str,
+        start: datetime,
+        end: datetime,
+        instruments,
+    ) -> PreparedBacktestInput:  # type: ignore[no-untyped-def]
+        cache = CandleCache()
+        symbols: list[PreparedSymbolInput] = []
+        tf = Timeframe.parse(timeframe)
+
+        for inst in instruments:
+            sym = inst.symbol
+            try:
+                candles = cache.get(
+                    self.market_data_service,
+                    instrument_id=inst.id,
+                    timeframe=tf,
+                    start=start,
+                    end=end,
+                )
+            except Exception as e:
+                # Make data issues actionable (e.g. invalid Kite token for a specific symbol).
+                raise RuntimeError(f"Failed to fetch candles for {sym} ({inst.id}): {e}") from e
+            if candles is None or candles.empty:
+                continue
+            symbols.append(
+                PreparedSymbolInput(
+                    instrument_id=inst.id,
+                    symbol=sym,
+                    candles=normalize_candles(candles),
+                )
+            )
+
+        return PreparedBacktestInput(
+            strategy_slug=strategy_slug,
+            timeframe=tf.value,
+            start=start,
+            end=end,
+            symbols=symbols,
+        )
 
 
 def _to_utc(dt: datetime, tz: str) -> datetime:

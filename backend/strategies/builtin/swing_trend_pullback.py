@@ -107,18 +107,15 @@ class SwingTrendPullbackStrategy(BaseStrategy):
             ),
         ]
 
-    def generate_signals(
+    def compute_indicators(
         self,
         data: pd.DataFrame,
         params: StrategyParams,
         context: StrategyContext | None = None,
         indicators: IndicatorContext | None = None,
-    ) -> SignalResult:
-        self._validate_input(data)
-        df = data.copy()
-        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=False)
-        df = df.sort_values("timestamp").reset_index(drop=True)
-
+    ) -> pd.DataFrame:
+        _ = context
+        df = data
         close = df["close"].astype("float64")
         high = df["high"].astype("float64")
         low = df["low"].astype("float64")
@@ -132,6 +129,36 @@ class SwingTrendPullbackStrategy(BaseStrategy):
         ema_slow_s = ic.get(("ema", "close", ema_slow_period), lambda: ema(close, ema_slow_period))
         r_s = ic.get(("rsi", "close", rsi_period), lambda: rsi(close, rsi_period))
 
+        ind_df = pd.DataFrame(
+            {
+                "ema_fast": ema_fast_s,
+                "ema_slow": ema_slow_s,
+                "rsi": r_s,
+            }
+        )
+
+        if bool(params.values["use_atr_stop"]):
+            atr_period = int(params.values["atr_period"])
+            a = ic.get(("atr", atr_period), lambda: atr(high, low, close, atr_period))
+            ind_df["atr"] = a.astype("float64")
+
+        return ind_df
+
+    def generate_signals_from_indicators(
+        self,
+        data: pd.DataFrame,
+        *,
+        indicators_df: pd.DataFrame,
+        params: StrategyParams,
+        context: StrategyContext | None = None,
+    ) -> SignalResult:
+        df = data
+        close = df["close"].astype("float64")
+
+        ema_fast_s = indicators_df["ema_fast"].astype("float64")
+        ema_slow_s = indicators_df["ema_slow"].astype("float64")
+        r_s = indicators_df["rsi"].astype("float64")
+
         trend = close > ema_slow_s
         reclaim = cross_above(close, ema_fast_s)
         entry = (trend & reclaim & (r_s < float(params.values["rsi_entry_max"]))).fillna(False).astype(bool)
@@ -141,22 +168,14 @@ class SwingTrendPullbackStrategy(BaseStrategy):
         exit_ = (exit_trend_break | exit_rsi).fillna(False).astype(bool)
 
         stop_loss = None
-        if bool(params.values["use_atr_stop"]):
-            atr_period = int(params.values["atr_period"])
-            a = ic.get(("atr", atr_period), lambda: atr(high, low, close, atr_period))
+        if bool(params.values["use_atr_stop"]) and "atr" in indicators_df.columns:
+            a = indicators_df["atr"].astype("float64")
             stop_loss = (close - (a * float(params.values["atr_mult"]))).astype("float64")
 
-        ind_df = pd.DataFrame(
-            {
-                "ema_fast": ema_fast_s,
-                "ema_slow": ema_slow_s,
-                "rsi": r_s,
-            }
-        )
         false_s = pd.Series(False, index=entry.index)
         return SignalResult(
             timestamp=df["timestamp"],
-            indicators=ind_df,
+            indicators=indicators_df,
             long_entry=entry,
             long_exit=exit_,
             short_entry=false_s,
