@@ -86,14 +86,27 @@ def main() -> int:
 
         watchlist_id = uuid.UUID(args.watchlist_id)
         svc = BacktestRunService.from_settings(session, settings=settings)
-        result = svc.run(
-            strategy_slug=args.strategy_slug,
-            watchlist_id=watchlist_id,
-            timeframe=args.timeframe,
-            start=start,
-            end=end,
-            params=params,
-        )
+        try:
+            result = svc.run(
+                strategy_slug=args.strategy_slug,
+                watchlist_id=watchlist_id,
+                timeframe=args.timeframe,
+                start=start,
+                end=end,
+                params=params,
+            )
+        except Exception as e:
+            msg = str(e)
+            print("Backtest failed.")
+            print("Error:", msg)
+            if "invalid token" in msg.lower():
+                print()
+                print("This usually means the instrument token sent to Kite is not valid.")
+                print("In SigmaLab, `Instrument.broker_instrument_token` must be the numeric Kite instrument_token.")
+                print("Check your watchlist items:")
+                print(f"  curl http://127.0.0.1:8000/watchlists/{watchlist_id}/items")
+                print("If `broker_instrument_token` looks like 'NSE:SYMBOL' (non-numeric), resync instruments and re-add the correct Instrument UUIDs.")
+            raise
 
         repo = BacktestRepository(session)
         n_trades = session.execute(
