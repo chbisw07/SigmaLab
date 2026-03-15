@@ -14,6 +14,10 @@ export default function WatchlistDetailPage() {
   const [items, setItems] = useState<Instrument[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  const [editName, setEditName] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Instrument[]>([]);
@@ -27,6 +31,7 @@ export default function WatchlistDetailPage() {
     try {
       const [w, it] = await Promise.all([api.getWatchlist(wid), api.listWatchlistItems(wid)]);
       setWl(w);
+      setEditName(w.name);
       setItems(it);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -76,6 +81,41 @@ export default function WatchlistDetailPage() {
       setItems(it);
     } catch (e) {
       setActionErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function rename() {
+    if (!wid) return;
+    const n = editName.trim();
+    if (!n) return;
+    if (wl && n === wl.name) return;
+    setRenaming(true);
+    setActionErr(null);
+    try {
+      const updated = await api.renameWatchlist(wid, { name: n });
+      setWl(updated);
+      setEditName(updated.name);
+    } catch (e) {
+      setActionErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRenaming(false);
+    }
+  }
+
+  async function del() {
+    if (!wid) return;
+    const name = wl?.name ?? wid;
+    const ok = window.confirm(`Delete watchlist "${name}"? This cannot be undone.`);
+    if (!ok) return;
+    setDeleting(true);
+    setActionErr(null);
+    try {
+      await api.deleteWatchlist(wid);
+      window.location.href = "/watchlists";
+    } catch (e) {
+      setActionErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -154,6 +194,43 @@ export default function WatchlistDetailPage() {
       <div className="panel">
         <div className="row" style={{ marginBottom: 10 }}>
           <div>
+            <div style={{ fontWeight: 650 }}>Manage watchlist</div>
+            <div className="subtle">Rename or delete this watchlist.</div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+          <div>
+            <div className="subtle">Name</div>
+            <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} />
+          </div>
+          <button className="btn primary" disabled={renaming || !editName.trim() || editName.trim() === (wl?.name ?? "")} onClick={() => void rename()}>
+            {renaming ? "Saving…" : "Save"}
+          </button>
+        </div>
+
+        <div style={{ height: 12 }} />
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontWeight: 650, color: "rgba(251,113,133,0.95)" }}>Danger zone</div>
+            <div className="subtle">Deleting a watchlist removes the list and its items (not instruments).</div>
+          </div>
+          <button className="btn" disabled={deleting} onClick={() => void del()} style={{ borderColor: "rgba(251,113,133,0.35)", color: "rgba(251,113,133,0.92)" }}>
+            {deleting ? "Deleting…" : "Delete watchlist"}
+          </button>
+        </div>
+
+        {actionErr ? (
+          <div className="subtle" style={{ marginTop: 10, color: "rgba(251,113,133,0.92)" }}>
+            {actionErr}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="panel">
+        <div className="row" style={{ marginBottom: 10 }}>
+          <div>
             <div style={{ fontWeight: 650 }}>Add instruments</div>
             <div className="subtle">Search by symbol or name. (Currently filters to NSE in the UI.)</div>
           </div>
@@ -223,4 +300,3 @@ export default function WatchlistDetailPage() {
     </div>
   );
 }
-

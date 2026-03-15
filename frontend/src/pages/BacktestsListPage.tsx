@@ -61,13 +61,21 @@ export default function BacktestsListPage() {
             title="No backtest runs found yet"
             body={
               <>
-                Create a watchlist, pick a built-in strategy, and run your first backtest. Results will be persisted for
-                later inspection and comparison.
+                <div style={{ marginBottom: 10 }}>
+                  Run your first backtest to generate persisted results you can inspect and compare later.
+                </div>
+                <ol className="subtle" style={{ margin: 0, paddingLeft: 18 }}>
+                  <li>Sync instruments (Kite)</li>
+                  <li>Create a watchlist and add symbols</li>
+                  <li>Pick a built-in strategy and run a backtest</li>
+                </ol>
               </>
             }
             actions={[
+              { label: "Sync instruments", to: "/instruments" },
               { label: "Create watchlist", to: "/watchlists" },
-              { label: "Run backtest", to: "/backtests/new" }
+              { label: "Run backtest", to: "/backtests/new" },
+              { label: "Dashboard", to: "/dashboard" }
             ]}
           />
         ) : (

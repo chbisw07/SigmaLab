@@ -14,6 +14,7 @@ export default function WatchlistsPage() {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function load() {
     setErr(null);
@@ -44,6 +45,21 @@ export default function WatchlistsPage() {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function del(w: Watchlist) {
+    const ok = window.confirm(`Delete watchlist "${w.name}"? This cannot be undone.`);
+    if (!ok) return;
+    setDeletingId(w.id);
+    setErr(null);
+    try {
+      await api.deleteWatchlist(w.id);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -116,9 +132,19 @@ export default function WatchlistsPage() {
                   <td className="subtle">{w.description ?? "—"}</td>
                   <td>{fmtDateTimeIso(w.updated_at)}</td>
                   <td style={{ textAlign: "right" }}>
-                    <Link to={`/watchlists/${w.id}`} className="btn">
-                      Open
-                    </Link>
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                      <Link to={`/watchlists/${w.id}`} className="btn">
+                        Open
+                      </Link>
+                      <button
+                        className="btn"
+                        disabled={deletingId === w.id}
+                        onClick={() => void del(w)}
+                        style={{ borderColor: "rgba(251,113,133,0.35)", color: "rgba(251,113,133,0.92)" }}
+                      >
+                        {deletingId === w.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -129,4 +155,3 @@ export default function WatchlistsPage() {
     </div>
   );
 }
-
