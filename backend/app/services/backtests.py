@@ -124,13 +124,17 @@ class BacktestRunService:
 
             for inst in instruments:
                 sym = inst.symbol
-                candles = cache.get(
-                    self.market_data_service,
-                    instrument_id=inst.id,
-                    timeframe=tf,
-                    start=start,
-                    end=end,
-                )
+                try:
+                    candles = cache.get(
+                        self.market_data_service,
+                        instrument_id=inst.id,
+                        timeframe=tf,
+                        start=start,
+                        end=end,
+                    )
+                except Exception as e:
+                    # Make data issues actionable (e.g. invalid Kite token for a specific symbol).
+                    raise RuntimeError(f"Failed to fetch candles for {sym} ({inst.id}): {e}") from e
                 if candles is None or candles.empty:
                     continue
 
