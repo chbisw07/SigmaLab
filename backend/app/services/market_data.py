@@ -17,6 +17,21 @@ from data.historical_fetcher import HistoricalFetcher
 from data.market_data_service import BaseCandleStore, InstrumentTokenResolver, MarketDataService
 
 
+class _DisabledKiteClient:
+    """KiteConnect-like stub used when Kite credentials are not configured.
+
+    This allows DB-first candle reads (already persisted) without requiring a live
+    broker session. If a missing-range backfill is needed, it fails with a clear,
+    actionable error.
+    """
+
+    def __init__(self, reason: str) -> None:
+        self._reason = reason
+
+    def historical_data(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        raise ValueError(self._reason)
+
+
 @dataclass(frozen=True)
 class DBInstrumentTokenResolver(InstrumentTokenResolver):
     repo: InstrumentRepository
@@ -91,8 +106,11 @@ class DBCandleStore(BaseCandleStore):
 
 
 def make_market_data_service(settings: Settings, session: Session) -> MarketDataService:
-    kite = make_kite_client(settings)
-    fetcher = HistoricalFetcher(client=kite)
+    try:
+        kite = make_kite_client(settings)
+        fetcher = HistoricalFetcher(client=kite)
+    except Exception as e:
+        fetcher = HistoricalFetcher(client=_DisabledKiteClient(str(e)))
     aggregator = CandleAggregator()
     inst_repo = InstrumentRepository(session)
     resolver = DBInstrumentTokenResolver(repo=inst_repo)

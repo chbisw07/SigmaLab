@@ -13,3 +13,4 @@ build/
 *.log
 *.egg-info/
 .pytest_cache/
+*.tsbuildinfo

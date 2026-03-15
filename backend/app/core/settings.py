@@ -37,12 +37,17 @@ class Settings(BaseSettings):
     kite_api_secret: str | None = Field(default=None)
     kite_access_token: str | None = Field(default=None)
 
+    # Frontend/dev UX. Comma-separated list in SIGMALAB_CORS_ORIGINS.
+    # Example: "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str | None = Field(default=None)
+
     @field_validator("database_url")
     @classmethod
     def _validate_database_url(cls, value: str) -> str:
         if not value.startswith("postgresql"):
             raise ValueError("SIGMALAB_DATABASE_URL must be a PostgreSQL URL (postgresql...)")
         return value
+
 
 
 @lru_cache
