@@ -70,23 +70,36 @@ class IntradayVWAPPullbackStrategy(BaseStrategy):
             ),
         ]
 
-    def generate_signals(
+    def compute_indicators(
         self,
         data: pd.DataFrame,
         params: StrategyParams,
         context: StrategyContext | None = None,
         indicators: IndicatorContext | None = None,
-    ) -> SignalResult:
-        self._validate_input(data)
-        df = data.copy()
-        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=False)
-        df = df.sort_values("timestamp").reset_index(drop=True)
-
+    ) -> pd.DataFrame:
+        _ = context
+        df = data
         close = df["close"].astype("float64")
         ic = indicators or IndicatorContext()
         rsi_period = int(params.values["rsi_period"])
         vw = ic.get(("vwap",), lambda: vwap(df))
         r = ic.get(("rsi", "close", rsi_period), lambda: rsi(close, rsi_period))
+
+        return pd.DataFrame({"vwap": vw, "rsi": r})
+
+    def generate_signals_from_indicators(
+        self,
+        data: pd.DataFrame,
+        *,
+        indicators_df: pd.DataFrame,
+        params: StrategyParams,
+        context: StrategyContext | None = None,
+    ) -> SignalResult:
+        df = data
+        close = df["close"].astype("float64")
+
+        vw = indicators_df["vwap"].astype("float64")
+        r = indicators_df["rsi"].astype("float64")
 
         buffer_pct = float(params.values["vwap_buffer_pct"]) / 100.0
         entry_line = vw * (1.0 + buffer_pct)
@@ -94,11 +107,10 @@ class IntradayVWAPPullbackStrategy(BaseStrategy):
         entry = (cross_above(close, entry_line) & (r < float(params.values["rsi_entry_max"]))).fillna(False).astype(bool)
         exit_ = (cross_below(close, vw) | (r > float(params.values["rsi_exit_min"]))).fillna(False).astype(bool)
 
-        ind_df = pd.DataFrame({"vwap": vw, "rsi": r})
         false_s = pd.Series(False, index=entry.index)
         return SignalResult(
             timestamp=df["timestamp"],
-            indicators=ind_df,
+            indicators=indicators_df,
             long_entry=entry,
             long_exit=exit_,
             short_entry=false_s,
