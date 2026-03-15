@@ -176,6 +176,32 @@ PH4 API endpoints (dev):
 - `GET /backtests/{run_id}/trades`
 - `GET /backtests/{run_id}/metrics`
 
+## PH4 Optimization-Readiness Enhancements
+
+To prepare for a fast PH5 Optimization Engine (parameter sweeps) without implementing PH5 yet, PH4 adds a reusable evaluation-preparation layer:
+
+MarketDataService  
+↓  
+`PreparedBacktestInput` (normalized OHLCV datasets per symbol)  
+↓  
+`IndicatorCache` / scoped indicator context (reusable indicator outputs)  
+↓  
+`StrategyEvaluator` (strategy evaluation)  
+↓  
+`SignalResult`  
+↓  
+ReplayEngine (PH4) generates trades and metrics
+
+Key rule remains unchanged:
+
+- Strategy modules generate **signals and metadata**.
+- Simulation/backtesting modules generate **trades**.
+
+These components are designed so PH5 can evaluate many parameter combinations while reusing:
+
+- prepared candle datasets
+- computed indicator series
+
 ## PH2 Sanity Script
 
 This repo includes a practical sanity script that demonstrates:
