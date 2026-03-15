@@ -15,7 +15,7 @@ Important rule: strategy modules generate signals and metadata; simulation engin
 
 ## Current Phase
 
-PH3 – Strategy Engine: strategy framework, indicator utilities, parameter schema/validation, strategy registry, and built-in strategies. (Built on the PH2 Data Engine foundation.)
+PH4 – Backtesting Engine: replay/simulation engine that turns strategy `SignalResult` outputs into trades, persisted runs, and metrics. (Built on PH2 Data Engine + PH3 Strategy Engine.)
 
 ## Core Features (Target)
 
@@ -136,7 +136,7 @@ Strategy (pure signal generator)
 ↓  
 `SignalResult` (signals + indicators + optional stop/take-profit)  
 ↓  
-Backtest Engine (PH4) generates trades and ledgers
+Backtest Engine (PH4) generates trades, ledgers, and metrics
 
 Strategies never call broker APIs directly; they consume MarketDataService-compatible candles and only output signals/metadata.
 
@@ -150,6 +150,31 @@ PH3 API endpoints (dev):
 - `GET /strategies`
 - `GET /strategies/{slug}`
 - `POST /strategies/{slug}/validate`
+
+## PH4 Backtesting Engine
+
+PH4 adds a deterministic replay engine that converts strategy signals into trades and metrics.
+
+Execution semantics (explicit assumptions in code):
+
+- Entries/exits execute on the **next bar open** after the signal bar (conservative, avoids lookahead).
+- Stop-loss / take-profit (if provided by a strategy) are checked **intrabar** using candle `low/high`.
+- If stop-loss and take-profit are both hit in the same candle, **stop-loss wins** (conservative).
+- Intraday strategies are forced closed at end-of-range with `intraday_squareoff`.
+
+Backtest artifacts persisted to PostgreSQL:
+
+- `backtest_runs`
+- `backtest_trades`
+- `backtest_metrics` (includes equity + drawdown curves as JSON arrays)
+
+PH4 API endpoints (dev):
+
+- `POST /backtests`
+- `GET /backtests`
+- `GET /backtests/{run_id}`
+- `GET /backtests/{run_id}/trades`
+- `GET /backtests/{run_id}/metrics`
 
 ## PH2 Sanity Script
 
@@ -175,6 +200,20 @@ Strategy engine sanity (no broker calls, deterministic sample candles):
 source .venv/bin/activate
 .venv/bin/python scripts/test_strategy_engine.py --slug swing_trend_pullback
 .venv/bin/python scripts/test_strategy_engine.py --slug intraday_vwap_pullback
+```
+
+## PH4 Sanity Script
+
+Run a backtest against an existing watchlist (requires PostgreSQL + Kite creds and instruments/watchlist populated):
+
+```bash
+source .venv/bin/activate
+.venv/bin/python scripts/test_backtest_engine.py \
+  --watchlist-id <WATCHLIST_UUID> \
+  --strategy-slug swing_trend_pullback \
+  --timeframe 1D \
+  --start 2026-01-01 \
+  --end 2026-03-01
 ```
 
 ## Documentation
