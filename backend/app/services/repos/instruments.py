@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from sqlalchemy import or_, select
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -67,3 +68,18 @@ class InstrumentRepository:
         if inst is None:
             raise KeyError("instrument not found")
         return inst.broker_instrument_token
+
+    def list(self, *, limit: int = 50) -> list[Instrument]:
+        stmt = select(Instrument).order_by(Instrument.symbol.asc()).limit(limit)
+        return list(self.session.execute(stmt).scalars())
+
+    def search(self, *, q: str, exchange: str | None = None, limit: int = 50) -> list[Instrument]:
+        qq = (q or "").strip()
+        stmt = select(Instrument)
+        if exchange:
+            stmt = stmt.where(Instrument.exchange == exchange)
+        if qq:
+            like = f"%{qq}%"
+            stmt = stmt.where(or_(Instrument.symbol.ilike(like), Instrument.name.ilike(like)))
+        stmt = stmt.order_by(Instrument.symbol.asc()).limit(limit)
+        return list(self.session.execute(stmt).scalars())

@@ -36,6 +36,14 @@ def list_watchlists(session: Session = Depends(get_db_session)):
     return WatchlistService(session).list()
 
 
+@router.get("/{watchlist_id}", response_model=WatchlistSchema)
+def get_watchlist(watchlist_id: uuid.UUID, session: Session = Depends(get_db_session)):
+    wl = WatchlistService(session).repo.get(watchlist_id)
+    if wl is None:
+        raise HTTPException(status_code=404, detail="watchlist not found")
+    return wl
+
+
 @router.patch("/{watchlist_id}", response_model=WatchlistSchema)
 def rename_watchlist(watchlist_id: uuid.UUID, payload: WatchlistRename, session: Session = Depends(get_db_session)):
     svc = WatchlistService(session)
@@ -70,4 +78,3 @@ def remove_watchlist_instrument(
 @router.get("/{watchlist_id}/items", response_model=list[InstrumentSchema])
 def list_watchlist_instruments(watchlist_id: uuid.UUID, session: Session = Depends(get_db_session)):
     return WatchlistService(session).list_instruments(watchlist_id=watchlist_id)
-
