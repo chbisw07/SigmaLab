@@ -139,7 +139,11 @@ class Strategy(Base, IdMixin, TimestampMixin):
         Uuid, ForeignKey("strategy_versions.id")
     )
 
-    versions: Mapped[list["StrategyVersion"]] = relationship(back_populates="strategy")
+    # Disambiguate from `current_version_id` FK path.
+    versions: Mapped[list["StrategyVersion"]] = relationship(
+        back_populates="strategy",
+        foreign_keys="StrategyVersion.strategy_id",
+    )
 
 
 class StrategyVersion(Base, IdMixin, TimestampMixin):
@@ -153,7 +157,10 @@ class StrategyVersion(Base, IdMixin, TimestampMixin):
     parameter_schema: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     default_params: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
 
-    strategy: Mapped[Strategy] = relationship(back_populates="versions")
+    strategy: Mapped[Strategy] = relationship(
+        back_populates="versions",
+        foreign_keys=[strategy_id],
+    )
 
 
 class ParameterPreset(Base, IdMixin, TimestampMixin):
@@ -172,34 +179,81 @@ class BacktestRun(Base, IdMixin, TimestampMixin):
     strategy_version_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("strategy_versions.id"), nullable=False, index=True
     )
+    # Snapshot the strategy identity in run records for reproducibility even if DB catalog evolves.
+    strategy_slug: Mapped[str | None] = mapped_column(String(128), index=True)
+    strategy_code_version: Mapped[str | None] = mapped_column(String(32))
+
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("watchlists.id"), nullable=False, index=True
     )
+    # Snapshot the watchlist constituents at run time so later watchlist edits don't affect reproducibility.
+    watchlist_snapshot_json: Mapped[list[dict]] = mapped_column(JSONB, default=list, nullable=False)
+
     timeframe: Mapped[str] = mapped_column(String(16), nullable=False)
     date_range: Mapped[str] = mapped_column(String(64), nullable=False)
+    start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     params_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    execution_assumptions_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+
     status: Mapped[BacktestRunStatus] = mapped_column(
         Enum(BacktestRunStatus), nullable=False, default=BacktestRunStatus.PENDING
     )
     engine_version: Mapped[str | None] = mapped_column(String(64))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class BacktestTrade(Base, IdMixin, TimestampMixin):
     __tablename__ = "backtest_trades"
+    __table_args__ = (
+        Index("ix_backtest_trades_run_symbol_entry_ts", "run_id", "symbol", "entry_ts"),
+    )
 
     run_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("backtest_runs.id"), nullable=False, index=True
     )
+    instrument_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("instruments.id"), index=True
+    )
     symbol: Mapped[str] = mapped_column(String(64), nullable=False)
+    side: Mapped[str] = mapped_column(String(8), nullable=False, default="long")
+    quantity: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     entry_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     exit_ts: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    holding_period_sec: Mapped[int | None] = mapped_column(BigInteger)
+    holding_period_bars: Mapped[int | None] = mapped_column(BigInteger)
     entry_price: Mapped[float] = mapped_column(nullable=False)
     exit_price: Mapped[float | None] = mapped_column()
     pnl: Mapped[float | None] = mapped_column()
     pnl_pct: Mapped[float | None] = mapped_column()
     entry_reason: Mapped[str | None] = mapped_column(Text)
     exit_reason: Mapped[str | None] = mapped_column(Text)
+    close_reason: Mapped[str | None] = mapped_column(String(32), index=True)
+
+
+class BacktestMetric(Base, IdMixin, TimestampMixin):
+    """Backtest metrics and visualization-ready series artifacts.
+
+    Store a single row for overall (portfolio-level) metrics with symbol=None, plus
+    optional per-symbol rows with symbol set.
+    """
+
+    __tablename__ = "backtest_metrics"
+    __table_args__ = (
+        Index("ix_backtest_metrics_run_id", "run_id"),
+        Index("ix_backtest_metrics_run_symbol", "run_id", "symbol"),
+    )
+
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("backtest_runs.id"), nullable=False, index=True
+    )
+    symbol: Mapped[str | None] = mapped_column(String(64))
+
+    metrics_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    equity_curve_json: Mapped[list[dict]] = mapped_column(JSONB, default=list, nullable=False)
+    drawdown_curve_json: Mapped[list[dict]] = mapped_column(JSONB, default=list, nullable=False)
 
 
 class OptimizationJob(Base, IdMixin, TimestampMixin):
