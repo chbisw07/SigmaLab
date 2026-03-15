@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import text
 
@@ -23,20 +23,33 @@ def _parse_dt(s: str) -> datetime:
 
 def main() -> int:
     p = argparse.ArgumentParser(description="PH4 sanity: run a backtest and print summary/trades.")
-    p.add_argument("--watchlist-id", required=True, help="UUID of an existing watchlist in the DB")
+    p.add_argument("--watchlist-id", required=False, help="UUID of an existing watchlist in the DB")
+    p.add_argument(
+        "--list-watchlists",
+        action="store_true",
+        help="List available watchlists and exit",
+    )
     p.add_argument("--strategy-slug", default="swing_trend_pullback")
     p.add_argument("--timeframe", default="1D", help="e.g. 15m, 45m, 1h, 1D")
-    p.add_argument("--start", required=True, help="ISO datetime, e.g. 2026-01-01")
-    p.add_argument("--end", required=True, help="ISO datetime, e.g. 2026-03-01")
+    p.add_argument(
+        "--start",
+        required=False,
+        help="ISO datetime, e.g. 2026-01-01 (default: 30 days ago, local time)",
+    )
+    p.add_argument(
+        "--end",
+        required=False,
+        help="ISO datetime, e.g. 2026-03-01 (default: now, local time)",
+    )
     p.add_argument("--params", default="{}", help="Strategy params as JSON (optional)")
     args = p.parse_args()
 
     settings = get_settings()
     db = Database.from_settings(settings)
 
-    watchlist_id = uuid.UUID(args.watchlist_id)
-    start = _parse_dt(args.start)
-    end = _parse_dt(args.end)
+    now = datetime.now()
+    start = _parse_dt(args.start) if args.start else (now - timedelta(days=30))
+    end = _parse_dt(args.end) if args.end else now
     try:
         params = json.loads(args.params)
     except json.JSONDecodeError as e:
@@ -45,8 +58,35 @@ def main() -> int:
         raise SystemExit("--params must be a JSON object/dict")
 
     with db.session() as session:
+        # Helper: list watchlists for the user.
+        if args.list_watchlists or not args.watchlist_id:
+            rows = session.execute(text("select id, name from watchlists order by created_at desc limit 50")).all()
+            if rows:
+                print("Available watchlists:")
+                for r in rows:
+                    print(f"  {r.id}  {r.name}")
+            else:
+                print("No watchlists found in DB yet.")
+
+            if args.list_watchlists:
+                return 0
+
+            print()
+            print("Missing required --watchlist-id.")
+            print("Example:")
+            print(
+                ".venv/bin/python scripts/test_backtest_engine.py "
+                "--watchlist-id <WATCHLIST_UUID> "
+                f"--strategy-slug {args.strategy_slug} "
+                f"--timeframe {args.timeframe} "
+                f"--start {start.date().isoformat()} "
+                f"--end {end.date().isoformat()}"
+            )
+            return 2
+
+        watchlist_id = uuid.UUID(args.watchlist_id)
         svc = BacktestRunService.from_settings(session, settings=settings)
-        res = svc.run(
+        result = svc.run(
             strategy_slug=args.strategy_slug,
             watchlist_id=watchlist_id,
             timeframe=args.timeframe,
@@ -56,32 +96,28 @@ def main() -> int:
         )
 
         repo = BacktestRepository(session)
-        trades = repo.list_trades(res.run_id, limit=20)
-        metrics = repo.list_metrics(res.run_id)
+        n_trades = session.execute(
+            text("select count(*) from backtest_trades where run_id = :id"),
+            {"id": result.run_id},
+        ).scalar_one()
+        # Per-symbol metric rows are stored with symbol != null.
+        n_symbols = session.execute(
+            text("select count(*) from backtest_metrics where run_id = :id and symbol is not null"),
+            {"id": result.run_id},
+        ).scalar_one()
 
-        print("run_id:", res.run_id)
-        print("status:", res.status)
-        print("overall_metrics:", res.overall_metrics)
-        print("metrics_rows:", len(metrics))
-        print("sample_trades:", len(trades))
-        for t in trades[:10]:
-            print(
-                {
-                    "symbol": t.symbol,
-                    "entry_ts": t.entry_ts,
-                    "exit_ts": t.exit_ts,
-                    "entry_price": t.entry_price,
-                    "exit_price": t.exit_price,
-                    "pnl_pct": t.pnl_pct,
-                    "close_reason": t.close_reason,
-                }
-            )
+        m = result.overall_metrics or {}
+        win_rate = float(m.get("win_rate", 0.0)) * 100.0
+        profit_factor = float(m.get("profit_factor", 0.0))
+        max_dd = float(m.get("max_drawdown_pct", 0.0)) * 100.0
 
-        # Quick DB sanity counts.
-        n_trades = session.execute(text("select count(*) from backtest_trades where run_id = :id"), {"id": res.run_id}).scalar_one()
-        n_metrics = session.execute(text("select count(*) from backtest_metrics where run_id = :id"), {"id": res.run_id}).scalar_one()
-        print("persisted backtest_trades:", n_trades)
-        print("persisted backtest_metrics:", n_metrics)
+        print("Backtest completed")
+        print(f"Strategy: {args.strategy_slug}")
+        print(f"Symbols: {int(n_symbols)}")
+        print(f"Trades: {int(n_trades)}")
+        print(f"Win rate: {win_rate:.0f}%")
+        print(f"Profit factor: {profit_factor:.2f}")
+        print(f"Max drawdown: {max_dd:.1f}%")
 
     return 0
 
