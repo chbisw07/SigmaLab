@@ -67,6 +67,7 @@ class ReplayEngine:
         in_pos = False
         entry_ts: datetime | None = None
         entry_price: float | None = None
+        entry_idx: int | None = None
         quantity = 1.0
         cash_equity = 1.0
         trades: list[Trade] = []
@@ -86,11 +87,14 @@ class ReplayEngine:
                     in_pos = True
                     entry_ts = ts_i
                     entry_price = float(df.loc[i, "open"])
+                    entry_idx = i
 
                 if in_pos and bool(long_exit.iloc[i - 1]):
                     exit_ts = ts_i
                     exit_price = float(df.loc[i, "open"])
-                    assert entry_ts is not None and entry_price is not None
+                    assert entry_ts is not None and entry_price is not None and entry_idx is not None
+                    holding_period_sec = int((exit_ts - entry_ts).total_seconds())
+                    holding_period_bars = int(max(1, i - entry_idx + 1))
                     pnl = (exit_price - entry_price) * quantity
                     pnl_pct = (exit_price / entry_price) - 1.0
                     cash_equity = cash_equity * (exit_price / entry_price)
@@ -103,6 +107,8 @@ class ReplayEngine:
                             quantity=quantity,
                             entry_ts=entry_ts,
                             exit_ts=exit_ts,
+                            holding_period_sec=holding_period_sec,
+                            holding_period_bars=holding_period_bars,
                             entry_price=entry_price,
                             exit_price=exit_price,
                             pnl=pnl,
@@ -114,6 +120,7 @@ class ReplayEngine:
                     in_pos = False
                     entry_ts = None
                     entry_price = None
+                    entry_idx = None
 
             # Intrabar stop-loss / take-profit checks on the current bar.
             if in_pos and entry_price is not None and entry_ts is not None:
@@ -143,6 +150,9 @@ class ReplayEngine:
 
                 if reason is not None and exit_price is not None:
                     exit_ts = df.loc[i, "timestamp"]
+                    assert entry_idx is not None
+                    holding_period_sec = int((exit_ts - entry_ts).total_seconds())
+                    holding_period_bars = int(max(1, i - entry_idx + 1))
                     pnl = (exit_price - entry_price) * quantity
                     pnl_pct = (exit_price / entry_price) - 1.0
                     cash_equity = cash_equity * (exit_price / entry_price)
@@ -155,6 +165,8 @@ class ReplayEngine:
                             quantity=quantity,
                             entry_ts=entry_ts,
                             exit_ts=exit_ts,
+                            holding_period_sec=holding_period_sec,
+                            holding_period_bars=holding_period_bars,
                             entry_price=entry_price,
                             exit_price=exit_price,
                             pnl=pnl,
@@ -166,6 +178,7 @@ class ReplayEngine:
                     in_pos = False
                     entry_ts = None
                     entry_price = None
+                    entry_idx = None
 
             equity_curve.append(EquityPoint(timestamp=ts_i, equity=mark_to_market(i)))
 
@@ -173,6 +186,9 @@ class ReplayEngine:
         if in_pos and entry_price is not None and entry_ts is not None:
             ts_last = df.loc[n - 1, "timestamp"]
             exit_price = float(df.loc[n - 1, "close"])
+            assert entry_idx is not None
+            holding_period_sec = int((ts_last - entry_ts).total_seconds())
+            holding_period_bars = int(max(1, (n - 1) - entry_idx + 1))
             pnl = (exit_price - entry_price) * quantity
             pnl_pct = (exit_price / entry_price) - 1.0
             cash_equity = cash_equity * (exit_price / entry_price)
@@ -191,6 +207,8 @@ class ReplayEngine:
                     quantity=quantity,
                     entry_ts=entry_ts,
                     exit_ts=ts_last,
+                    holding_period_sec=holding_period_sec,
+                    holding_period_bars=holding_period_bars,
                     entry_price=entry_price,
                     exit_price=exit_price,
                     pnl=pnl,
@@ -201,4 +219,3 @@ class ReplayEngine:
             )
 
         return ReplayResult(trades=trades, equity_curve=equity_curve)
-

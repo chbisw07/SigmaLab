@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from app.backtesting.candle_cache import CandleCache
 from app.backtesting.metrics import combine_equity_curves, compute_metrics
-from app.backtesting.models import ExecutionAssumptions
+from app.backtesting.models import ExecutionAssumptions, Trade
 from app.backtesting.replay_engine import ReplayEngine
 from app.models.orm import BacktestRunStatus
 from app.services.market_data import make_market_data_service
@@ -113,88 +113,92 @@ class BacktestRunService:
         started_at = _utcnow()
         repo.set_status(run_row.id, status=BacktestRunStatus.RUNNING, started_at=started_at)
 
-        cache = CandleCache()
-        engine = self.replay_engine
+        try:
+            cache = CandleCache()
+            engine = self.replay_engine
 
-        all_trades_rows: list[dict] = []
-        all_trades = []
-        per_symbol_metrics: list[tuple[str, dict[str, Any], list[dict], list[dict]]] = []
-        per_symbol_equity: list[list] = []
+            all_trades_rows: list[dict] = []
+            all_trades: list[Trade] = []
+            per_symbol_metrics: list[tuple[str, dict[str, Any], list[dict], list[dict]]] = []
+            per_symbol_equity: list[list] = []
 
-        for inst in instruments:
-            sym = inst.symbol
-            candles = cache.get(
-                self.market_data_service,
-                instrument_id=inst.id,
-                timeframe=tf,
-                start=start,
-                end=end,
-            )
-            if candles is None or candles.empty:
-                continue
-
-            # Enforce expected candle shape for strategy + replay.
-            candles = candles[["timestamp", "open", "high", "low", "close", "volume"]].copy()
-            ctx = StrategyContext(symbol=sym, timeframe=tf.value, start_date=start, end_date=end)
-            sig = strat.generate_signals(candles, params=validated_params, context=ctx)  # type: ignore[arg-type]
-            replay = engine.run(
-                candles,
-                sig,
-                metadata=detail.metadata,
-                symbol=sym,
-                instrument_id=inst.id,
-                run_id=run_row.id,
-            )
-
-            if replay.trades:
-                all_trades_rows.extend([t.to_orm_row() for t in replay.trades])
-                all_trades.extend(replay.trades)
-
-            metrics_res = compute_metrics(replay.trades, replay.equity_curve)
-            per_symbol_equity.append(metrics_res.equity_curve)
-            per_symbol_metrics.append(
-                (
-                    sym,
-                    metrics_res.metrics,
-                    [p.to_json() for p in metrics_res.equity_curve],
-                    [p.to_json() for p in metrics_res.drawdown_curve],
+            for inst in instruments:
+                sym = inst.symbol
+                candles = cache.get(
+                    self.market_data_service,
+                    instrument_id=inst.id,
+                    timeframe=tf,
+                    start=start,
+                    end=end,
                 )
+                if candles is None or candles.empty:
+                    continue
+
+                # Enforce expected candle shape for strategy + replay.
+                candles = candles[["timestamp", "open", "high", "low", "close", "volume"]].copy()
+                ctx = StrategyContext(symbol=sym, timeframe=tf.value, start_date=start, end_date=end)
+                sig = strat.generate_signals(candles, params=validated_params, context=ctx)  # type: ignore[arg-type]
+                replay = engine.run(
+                    candles,
+                    sig,
+                    metadata=detail.metadata,
+                    symbol=sym,
+                    instrument_id=inst.id,
+                    run_id=run_row.id,
+                )
+
+                if replay.trades:
+                    all_trades_rows.extend([t.to_orm_row() for t in replay.trades])
+                    all_trades.extend(replay.trades)
+
+                metrics_res = compute_metrics(replay.trades, replay.equity_curve)
+                per_symbol_equity.append(metrics_res.equity_curve)
+                per_symbol_metrics.append(
+                    (
+                        sym,
+                        metrics_res.metrics,
+                        [p.to_json() for p in metrics_res.equity_curve],
+                        [p.to_json() for p in metrics_res.drawdown_curve],
+                    )
+                )
+
+            if all_trades_rows:
+                repo.add_trades(all_trades_rows)
+
+            # Persist per-symbol metrics.
+            for sym, m, eq, dd in per_symbol_metrics:
+                repo.upsert_metrics(
+                    run_id=run_row.id,
+                    symbol=sym,
+                    metrics_json=m,
+                    equity_curve_json=eq,
+                    drawdown_curve_json=dd,
+                )
+
+            # Portfolio-level metrics (equal-weight curve).
+            portfolio_curve = combine_equity_curves(per_symbol_equity)
+            portfolio_res = compute_metrics(
+                trades=all_trades,
+                equity_curve=portfolio_curve,
             )
-
-        if all_trades_rows:
-            repo.add_trades(all_trades_rows)
-
-        # Persist per-symbol metrics.
-        for sym, m, eq, dd in per_symbol_metrics:
             repo.upsert_metrics(
                 run_id=run_row.id,
-                symbol=sym,
-                metrics_json=m,
-                equity_curve_json=eq,
-                drawdown_curve_json=dd,
+                symbol=None,
+                metrics_json=portfolio_res.metrics,
+                equity_curve_json=[p.to_json() for p in portfolio_res.equity_curve],
+                drawdown_curve_json=[p.to_json() for p in portfolio_res.drawdown_curve],
             )
 
-        # Portfolio-level metrics (equal-weight curve).
-        portfolio_curve = combine_equity_curves(per_symbol_equity)
-        portfolio_res = compute_metrics(
-            trades=all_trades,
-            equity_curve=portfolio_curve,
-        )
-        repo.upsert_metrics(
-            run_id=run_row.id,
-            symbol=None,
-            metrics_json=portfolio_res.metrics,
-            equity_curve_json=[p.to_json() for p in portfolio_res.equity_curve],
-            drawdown_curve_json=[p.to_json() for p in portfolio_res.drawdown_curve],
-        )
+            repo.set_status(run_row.id, status=BacktestRunStatus.SUCCESS, completed_at=_utcnow())
 
-        repo.set_status(run_row.id, status=BacktestRunStatus.SUCCESS, completed_at=_utcnow())
-
-        return BacktestResultSummary(
-            run_id=run_row.id,
-            status=BacktestRunStatus.SUCCESS.value,
-            overall_metrics=portfolio_res.metrics,
-        )
+            return BacktestResultSummary(
+                run_id=run_row.id,
+                status=BacktestRunStatus.SUCCESS.value,
+                overall_metrics=portfolio_res.metrics,
+            )
+        except Exception:
+            repo.set_status(run_row.id, status=BacktestRunStatus.FAILED, completed_at=_utcnow())
+            raise
 
 
 def _to_utc(dt: datetime, tz: str) -> datetime:

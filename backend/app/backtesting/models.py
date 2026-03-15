@@ -47,6 +47,8 @@ class Trade:
     quantity: float
     entry_ts: datetime
     exit_ts: datetime
+    holding_period_sec: int
+    holding_period_bars: int
     entry_price: float
     exit_price: float
     pnl: float
@@ -64,6 +66,8 @@ class Trade:
             "quantity": self.quantity,
             "entry_ts": self.entry_ts,
             "exit_ts": self.exit_ts,
+            "holding_period_sec": int(self.holding_period_sec),
+            "holding_period_bars": int(self.holding_period_bars),
             "entry_price": float(self.entry_price),
             "exit_price": float(self.exit_price),
             "pnl": float(self.pnl),
@@ -97,4 +101,3 @@ class DrawdownPoint:
 class ReplayResult:
     trades: list[Trade]
     equity_curve: list[EquityPoint]
-

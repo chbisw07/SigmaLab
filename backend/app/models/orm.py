@@ -215,6 +215,8 @@ class BacktestTrade(Base, IdMixin, TimestampMixin):
     quantity: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     entry_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     exit_ts: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    holding_period_sec: Mapped[int | None] = mapped_column(BigInteger)
+    holding_period_bars: Mapped[int | None] = mapped_column(BigInteger)
     entry_price: Mapped[float] = mapped_column(nullable=False)
     exit_price: Mapped[float | None] = mapped_column()
     pnl: Mapped[float | None] = mapped_column()

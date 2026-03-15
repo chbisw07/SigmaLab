@@ -93,6 +93,8 @@ class BacktestTradeSchema(Timestamped):
     quantity: float
     entry_ts: datetime
     exit_ts: datetime | None = None
+    holding_period_sec: int | None = None
+    holding_period_bars: int | None = None
     entry_price: float
     exit_price: float | None = None
     pnl: float | None = None
