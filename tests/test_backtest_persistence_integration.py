@@ -40,6 +40,19 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def _reset_public_schema(engine) -> None:  # type: ignore[no-untyped-def]
+    """Reset the test database schema.
+
+    We avoid `Base.metadata.drop_all()` because the schema contains a FK cycle
+    (`strategies` <-> `strategy_versions`) which can cause `drop_all()` to raise
+    CircularDependencyError when FK constraints don't have names in SQLAlchemy's
+    in-memory metadata.
+    """
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+
+
 class _FakeMarketDataService:
     def __init__(self, candles: pd.DataFrame) -> None:
         self._candles = candles
@@ -129,9 +142,7 @@ def test_backtest_persists_runs_trades_and_metrics_postgres(monkeypatch: pytest.
     engine = create_engine(url, future=True)
 
     # Start from a clean schema state and ensure migrations are the source of truth.
-    Base.metadata.drop_all(engine)
-    with engine.begin() as conn:
-        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    _reset_public_schema(engine)
 
     subprocess.run(
         [sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "head"],
@@ -144,20 +155,6 @@ def test_backtest_persists_runs_trades_and_metrics_postgres(monkeypatch: pytest.
 
     SessionLocal = sessionmaker(bind=engine, future=True)
     with SessionLocal() as session:
-        # Truncate key tables to keep the test idempotent even if run repeatedly.
-        session.execute(
-            text(
-                "TRUNCATE "
-                "backtest_metrics, backtest_trades, backtest_runs, "
-                "watchlist_items, watchlists, "
-                "parameter_presets, optimization_jobs, "
-                "strategy_versions, strategies, "
-                "candles, instruments, broker_connections "
-                "CASCADE"
-            )
-        )
-        session.commit()
-
         inst = Instrument(
             broker_instrument_token="123",
             exchange="NSE",
@@ -247,4 +244,3 @@ def test_backtest_persists_runs_trades_and_metrics_postgres(monkeypatch: pytest.
         assert len(metrics_rows) == 2  # one per symbol + one overall
         assert any(m.symbol is None for m in metrics_rows)
         assert any(m.symbol == "TEST" for m in metrics_rows)
-
