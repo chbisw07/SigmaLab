@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     # Frontend/dev UX. Comma-separated list in SIGMALAB_CORS_ORIGINS.
     # Example: "http://localhost:5173,http://127.0.0.1:5173"
-    cors_origins: list[str] = Field(default_factory=list)
+    cors_origins: str | None = Field(default=None)
 
     @field_validator("database_url")
     @classmethod
@@ -48,22 +48,6 @@ class Settings(BaseSettings):
             raise ValueError("SIGMALAB_DATABASE_URL must be a PostgreSQL URL (postgresql...)")
         return value
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def _parse_cors_origins(cls, value):  # type: ignore[no-untyped-def]
-        if value is None:
-            return []
-        if isinstance(value, list):
-            return [str(v).strip() for v in value if str(v).strip()]
-        if isinstance(value, str):
-            v = value.strip()
-            if not v:
-                return []
-            # Accept JSON-like lists as well, but keep the common CSV path simple.
-            if v.startswith("[") and v.endswith("]"):
-                return [s.strip().strip("\"'") for s in v.strip("[]").split(",") if s.strip().strip("\"'")]
-            return [s.strip() for s in v.split(",") if s.strip()]
-        return []
 
 
 @lru_cache

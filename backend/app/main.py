@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,7 +21,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Allow a separate local dev frontend to call the API.
     # In prod, set SIGMALAB_CORS_ORIGINS explicitly.
-    origins = list(settings.cors_origins)
+    origins = _parse_cors_origins(settings.cors_origins)
     if not origins and settings.env in ("local", "dev"):
         origins = [
             "http://localhost:5173",
@@ -41,6 +43,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"name": "sigmalab", "status": "ok"}
 
     return app
+
+
+def _parse_cors_origins(raw: str | None) -> list[str]:
+    if raw is None:
+        return []
+    v = raw.strip()
+    if not v:
+        return []
+    # Accept a JSON list string too: '["http://localhost:5173"]'
+    if v.startswith("["):
+        try:
+            data = json.loads(v)
+            if isinstance(data, list):
+                return [str(x).strip() for x in data if str(x).strip()]
+        except Exception:
+            return []
+    return [s.strip() for s in v.split(",") if s.strip()]
 
 
 app = create_app()
