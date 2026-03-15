@@ -69,18 +69,28 @@ class ParameterPresetSchema(Timestamped):
 
 class BacktestRunSchema(Timestamped):
     strategy_version_id: uuid.UUID
+    strategy_slug: str | None = None
+    strategy_code_version: str | None = None
     watchlist_id: uuid.UUID
+    watchlist_snapshot_json: list[dict]
     timeframe: str
     date_range: str
+    start_at: datetime | None = None
+    end_at: datetime | None = None
     params_json: dict
+    execution_assumptions_json: dict
     status: BacktestRunStatus
     engine_version: str | None = None
+    started_at: datetime | None = None
     completed_at: datetime | None = None
 
 
 class BacktestTradeSchema(Timestamped):
     run_id: uuid.UUID
+    instrument_id: uuid.UUID | None = None
     symbol: str
+    side: str
+    quantity: float
     entry_ts: datetime
     exit_ts: datetime | None = None
     entry_price: float
@@ -89,6 +99,15 @@ class BacktestTradeSchema(Timestamped):
     pnl_pct: float | None = None
     entry_reason: str | None = None
     exit_reason: str | None = None
+    close_reason: str | None = None
+
+
+class BacktestMetricSchema(Timestamped):
+    run_id: uuid.UUID
+    symbol: str | None = None
+    metrics_json: dict
+    equity_curve_json: list[dict]
+    drawdown_curve_json: list[dict]
 
 
 class OptimizationJobSchema(Timestamped):
