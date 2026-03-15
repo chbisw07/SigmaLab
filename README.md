@@ -17,6 +17,8 @@ Important rule: strategy modules generate signals and metadata; simulation engin
 
 PH4 – Backtesting Engine: replay/simulation engine that turns strategy `SignalResult` outputs into trades, persisted runs, and metrics. (Built on PH2 Data Engine + PH3 Strategy Engine.)
 
+PH8 – Visualization / Results UX (this branch): a lightweight React UI to inspect persisted backtest runs, metrics, trades, and annotated chart context. It does not change PH4 semantics; it consumes PH4 artifacts.
+
 ## Core Features (Target)
 
 - Watchlist-based strategy testing
@@ -175,6 +177,45 @@ PH4 API endpoints (dev):
 - `GET /backtests/{run_id}`
 - `GET /backtests/{run_id}/trades`
 - `GET /backtests/{run_id}/metrics`
+
+## PH8 Visualization / Results UX
+
+PH8 adds:
+
+- CSV export endpoints for trades and metrics
+- a chart-context endpoint that returns candles + trade markers + optional indicator overlays
+- a minimal React UI under `frontend/` for inspecting completed runs
+
+Additional PH8 API endpoints (dev):
+
+- `GET /backtests/{run_id}/export/trades.csv`
+- `GET /backtests/{run_id}/export/metrics.csv`
+- `GET /backtests/{run_id}/chart?instrument_id=<INSTRUMENT_UUID>`
+
+Run the frontend (local dev):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+By default the frontend calls `http://127.0.0.1:8000`. To change:
+
+- copy `frontend/.env.example` to `frontend/.env`
+- set `VITE_API_BASE_URL=...`
+
+If the frontend is on a different origin, set backend CORS explicitly (or rely on the default local dev origins):
+
+```bash
+SIGMALAB_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+Notes:
+
+- Trade markers come from persisted `backtest_trades`.
+- Equity/drawdown curves come from persisted `backtest_metrics`.
+- Indicator overlays are recomputed deterministically from strategy code + stored params (they are not persisted artifacts yet).
 
 ## PH4 Optimization-Readiness Enhancements
 
