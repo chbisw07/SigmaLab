@@ -139,7 +139,11 @@ class Strategy(Base, IdMixin, TimestampMixin):
         Uuid, ForeignKey("strategy_versions.id")
     )
 
-    versions: Mapped[list["StrategyVersion"]] = relationship(back_populates="strategy")
+    # Disambiguate from `current_version_id` FK path.
+    versions: Mapped[list["StrategyVersion"]] = relationship(
+        back_populates="strategy",
+        foreign_keys="StrategyVersion.strategy_id",
+    )
 
 
 class StrategyVersion(Base, IdMixin, TimestampMixin):
@@ -153,7 +157,10 @@ class StrategyVersion(Base, IdMixin, TimestampMixin):
     parameter_schema: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     default_params: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
 
-    strategy: Mapped[Strategy] = relationship(back_populates="versions")
+    strategy: Mapped[Strategy] = relationship(
+        back_populates="versions",
+        foreign_keys=[strategy_id],
+    )
 
 
 class ParameterPreset(Base, IdMixin, TimestampMixin):
