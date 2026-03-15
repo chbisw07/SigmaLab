@@ -48,8 +48,12 @@ class BaseStrategy(ABC):
     ) -> pd.DataFrame:
         """Compute indicator overlays for this strategy.
 
-        Strategies should prefer computing indicators via shared indicator functions and
-        storing/reusing results through the provided `indicators` cache context.
+        Strategies should compute indicators via shared indicator functions and reuse them
+        through the provided `indicators` cache context.
+
+        Important caching rule:
+        - the cache key passed to `indicators.get(key, ...)` must include any indicator-specific
+          parameters (e.g. period) so PH5 parameter sweeps can reuse unaffected indicators.
         """
         _ = (params, context, indicators)
         return pd.DataFrame()
