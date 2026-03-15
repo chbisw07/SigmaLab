@@ -17,7 +17,9 @@ Important rule: strategy modules generate signals and metadata; simulation engin
 
 PH4 – Backtesting Engine: replay/simulation engine that turns strategy `SignalResult` outputs into trades, persisted runs, and metrics. (Built on PH2 Data Engine + PH3 Strategy Engine.)
 
-PH8 – Visualization / Results UX (this branch): a lightweight React UI to inspect persisted backtest runs, metrics, trades, and annotated chart context. It does not change PH4 semantics; it consumes PH4 artifacts.
+PH8 – Visualization / Results UX: a lightweight React UI to inspect persisted backtest runs, metrics, trades, and annotated chart context. It does not change PH4 semantics; it consumes PH4 artifacts.
+
+PH6 – Frontend UX (this branch): productizes the full research workflow (Dashboard → Watchlists → Strategies → Run Backtest → Results → Trade chart → Settings) on top of the PH8 results foundation.
 
 ## Core Features (Target)
 
@@ -198,6 +200,13 @@ Run the frontend (local dev):
 cd frontend
 npm install
 npm run dev
+```
+
+Run frontend tests:
+
+```bash
+cd frontend
+npm run test
 ```
 
 By default the frontend calls `http://127.0.0.1:8000`. To change:
