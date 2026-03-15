@@ -38,7 +38,10 @@ class StrategyEvaluator:
         scoped = self.indicator_cache.scoped(
             instrument_id=instrument_id,
             timeframe=timeframe,
-            params=params.values,
+            # Intentionally do NOT scope by full strategy params here.
+            # Indicator keys should include only the parameters that affect that indicator
+            # (e.g. ("ema","close",20)). This enables reuse across parameter sweeps in PH5.
+            params=None,
         )
         try:
             ind_df = strategy.compute_indicators(df, params, context=context, indicators=scoped)  # type: ignore[arg-type]
