@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../app/api/client";
 import type { BacktestRun } from "../app/api/types";
+import EmptyState from "../app/ui/EmptyState";
 import { fmtDateTimeIso } from "../app/ui/format";
 
 function statusPill(status: string) {
@@ -33,11 +34,16 @@ export default function BacktestsListPage() {
       <div className="row" style={{ marginBottom: 12 }}>
         <div>
           <h1 className="h1">Backtests</h1>
-          <div className="subtle">Inspect persisted runs, metrics, trades, and chart context.</div>
+          <div className="subtle">Run strategies on watchlists and inspect persisted results.</div>
         </div>
-        <button className="btn" onClick={() => void load()}>
-          Refresh
-        </button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <Link to="/backtests/new" className="btn primary">
+            New backtest
+          </Link>
+          <button className="btn" onClick={() => void load()}>
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="panel">
@@ -51,7 +57,19 @@ export default function BacktestsListPage() {
         ) : !runs ? (
           <div className="subtle">Loading…</div>
         ) : runs.length === 0 ? (
-          <div className="subtle">No backtest runs found yet.</div>
+          <EmptyState
+            title="No backtest runs found yet"
+            body={
+              <>
+                Create a watchlist, pick a built-in strategy, and run your first backtest. Results will be persisted for
+                later inspection and comparison.
+              </>
+            }
+            actions={[
+              { label: "Create watchlist", to: "/watchlists" },
+              { label: "Run backtest", to: "/backtests/new" }
+            ]}
+          />
         ) : (
           <table className="table">
             <thead>
@@ -89,4 +107,3 @@ export default function BacktestsListPage() {
     </div>
   );
 }
-
