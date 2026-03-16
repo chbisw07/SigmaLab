@@ -51,9 +51,9 @@ def main(argv: list[str]) -> int:
 
     settings = get_settings()
     db = Database.from_settings(settings)
-    kite = make_kite_client(settings)
 
     with db.session() as session:
+        kite = make_kite_client(settings, session=session)
         if args.sync_instruments:
             repo = InstrumentRepository(session)
             n = InstrumentService(kite=kite, repo=repo).sync_instruments()

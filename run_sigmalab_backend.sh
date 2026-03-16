@@ -89,7 +89,21 @@ sudo -u postgres psql -v ON_ERROR_STOP=1 -tAc "DO \$\$ BEGIN IF NOT EXISTS (SELE
 sudo -u postgres psql -v ON_ERROR_STOP=1 -tAc "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
 
 echo "Running Alembic migrations..."
-alembic -c backend/alembic.ini upgrade head
+# If multiple Alembic heads exist (e.g., concurrent migrations), `upgrade head` is ambiguous.
+# `upgrade heads` upgrades all heads and keeps dev unblocked; we still log a warning so we
+# remember to merge heads in the migration graph when appropriate.
+ALEMBIC_HEADS="$(python -m alembic -c backend/alembic.ini heads | awk '{print $1}')"
+HEAD_COUNT="$(printf "%s\n" "$ALEMBIC_HEADS" | sed '/^\s*$/d' | wc -l | tr -d ' ')"
+if [[ "$HEAD_COUNT" -gt 1 ]]; then
+  echo "WARNING: Multiple Alembic heads detected:"
+  printf "%s\n" "$ALEMBIC_HEADS" | sed 's/^/  - /'
+  echo "Running: alembic upgrade heads"
+  echo "If this keeps happening, create a merge revision:"
+  echo "  python -m alembic -c backend/alembic.ini merge -m \"merge heads\" <head1> <head2> ..."
+  python -m alembic -c backend/alembic.ini upgrade heads
+else
+  python -m alembic -c backend/alembic.ini upgrade head
+fi
 
 echo "Starting SigmaLab backend on http://127.0.0.1:8000 ..."
 exec uvicorn app.main:app --reload --host 127.0.0.1 --port 8000

@@ -20,7 +20,7 @@ def sync_instruments(
     settings: Settings = Depends(get_app_settings),
 ):
     try:
-        kite = make_kite_client(settings)
+        kite = make_kite_client(settings, session=session)
         repo = InstrumentRepository(session)
         n = InstrumentService(kite=kite, repo=repo).sync_instruments()
         return {"status": "ok", "upserted": n}
