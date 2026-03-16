@@ -194,3 +194,98 @@ export type BacktestCreateResponse = {
 };
 
 export type HealthResponse = { status: "ok" };
+
+export type OptimizationJobStatus = "pending" | "running" | "success" | "failed";
+
+export type OptimizationJob = {
+  id: UUID;
+  created_at: string;
+  updated_at: string;
+  strategy_version_id: UUID;
+  watchlist_id: UUID;
+  strategy_slug: string | null;
+  strategy_code_version: string | null;
+  timeframe: string;
+  start_at: string | null;
+  end_at: string | null;
+  objective_metric: string;
+  sort_direction: string;
+  total_combinations: number;
+  completed_combinations: number;
+  started_at: string | null;
+  completed_at: string | null;
+  search_space_json: Record<string, unknown>;
+  execution_assumptions_json: Record<string, unknown>;
+  status: OptimizationJobStatus;
+  result_summary_json: Record<string, unknown>;
+};
+
+export type OptimizationCandidateResult = {
+  id: UUID;
+  created_at: string;
+  updated_at: string;
+  optimization_job_id: UUID;
+  backtest_run_id: UUID;
+  rank: number;
+  params_json: Record<string, unknown>;
+  objective_value: number;
+  metrics_json: Record<string, unknown>;
+};
+
+export type OptimizationsListResponse = {
+  status: "ok";
+  jobs: OptimizationJob[];
+};
+
+export type OptimizationGetResponse = {
+  status: "ok";
+  job: OptimizationJob;
+};
+
+export type OptimizationCandidatesResponse = {
+  status: "ok";
+  candidates: OptimizationCandidateResult[];
+};
+
+export type OptimizationPreviewResponse = {
+  status: "ok";
+  total_combinations: number;
+  keys: string[];
+};
+
+export type OptimizationCreateRequest = {
+  strategy_slug: string;
+  watchlist_id: UUID;
+  timeframe: string;
+  start: string; // ISO
+  end: string; // ISO
+  objective_metric: string;
+  sort_direction: "asc" | "desc";
+  selection: Record<string, { mode: "range" | "values"; min?: number; max?: number; step?: number; values?: any[] }>;
+  max_combinations?: number;
+};
+
+export type OptimizationCreateResponse = {
+  status: "ok";
+  job_id: UUID;
+  total_combinations: number;
+};
+
+export type ParameterPreset = {
+  id: UUID;
+  created_at: string;
+  updated_at: string;
+  strategy_version_id: UUID;
+  name: string;
+  values_json: Record<string, unknown>;
+};
+
+export type StrategyPresetsResponse = {
+  status: "ok";
+  presets: ParameterPreset[];
+};
+
+export type PresetCreateResponse = {
+  status: "ok";
+  preset: ParameterPreset;
+};

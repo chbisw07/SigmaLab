@@ -67,9 +67,14 @@ export default function StrategyDetailPage() {
           </>
         }
         actions={
-          <Link to={`/backtests/new?strategy=${encodeURIComponent(s)}`} className="btn primary">
-            Run backtest
-          </Link>
+          <>
+            <Link to={`/optimizations/new?strategy=${encodeURIComponent(s)}`} className="btn">
+              Optimize
+            </Link>
+            <Link to={`/backtests/new?strategy=${encodeURIComponent(s)}`} className="btn primary">
+              Run backtest
+            </Link>
+          </>
         }
       />
 
@@ -133,4 +138,3 @@ export default function StrategyDetailPage() {
     </div>
   );
 }
-

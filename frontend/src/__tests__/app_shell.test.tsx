@@ -24,6 +24,7 @@ describe("App Shell", () => {
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Watchlists" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Strategies" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Optimization" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
 
     // Dashboard content becomes available after async fetches resolve.
