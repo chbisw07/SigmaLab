@@ -2,6 +2,57 @@ export type UUID = string;
 
 export type BacktestRunStatus = "pending" | "running" | "success" | "failed";
 
+export type Instrument = {
+  id: UUID;
+  created_at: string;
+  updated_at: string;
+  broker_instrument_token: string;
+  exchange: string;
+  symbol: string;
+  name: string | null;
+  segment: string | null;
+  instrument_metadata: Record<string, unknown>;
+};
+
+export type Watchlist = {
+  id: UUID;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  description: string | null;
+};
+
+export type StrategyCategory = "swing" | "intraday";
+
+export type StrategyStatus = "draft" | "validated" | "archived";
+
+export type StrategyMetadata = {
+  name: string;
+  slug: string;
+  description: string | null;
+  category: StrategyCategory;
+  timeframe: string;
+  long_only: boolean;
+  supported_segments: string[];
+  version: string;
+  status: StrategyStatus;
+  notes: string | null;
+};
+
+export type ParameterSpec = {
+  key: string;
+  label: string;
+  type: "int" | "float" | "bool" | "enum";
+  default: unknown;
+  description: string | null;
+  tunable: boolean;
+  min: number | null;
+  max: number | null;
+  step: number | null;
+  enum_values: string[] | null;
+  grid_values: Array<string | number> | null;
+};
+
 export type BacktestRun = {
   id: UUID;
   created_at: string;
@@ -110,3 +161,36 @@ export type BacktestChartResponse = {
   signals: Record<string, boolean[]>;
 };
 
+export type StrategiesListResponse = {
+  status: "ok";
+  strategies: StrategyMetadata[];
+};
+
+export type StrategyDetailResponse = {
+  status: "ok";
+  metadata: StrategyMetadata;
+  parameters: ParameterSpec[];
+};
+
+export type StrategyValidateResponse = {
+  status: "ok";
+  validated: Record<string, unknown>;
+};
+
+export type BacktestCreateRequest = {
+  strategy_slug: string;
+  watchlist_id: UUID;
+  timeframe: string;
+  start: string; // ISO
+  end: string; // ISO
+  params?: Record<string, unknown> | null;
+};
+
+export type BacktestCreateResponse = {
+  status: "ok";
+  run_id: UUID;
+  run_status: string;
+  metrics: Record<string, unknown>;
+};
+
+export type HealthResponse = { status: "ok" };
