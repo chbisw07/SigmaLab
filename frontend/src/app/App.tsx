@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import DashboardPage from "../pages/DashboardPage";
 import WatchlistsPage from "../pages/WatchlistsPage";
@@ -14,8 +14,11 @@ import ResultsRunRedirect from "../pages/ResultsRunRedirect";
 import OptimizationsListPage from "../pages/OptimizationsListPage";
 import OptimizationNewPage from "../pages/OptimizationNewPage";
 import OptimizationDetailPage from "../pages/OptimizationDetailPage";
+import { DEFAULT_THEME, THEMES, type ThemeId, getStoredTheme, setTheme } from "./theme";
 
 export default function App() {
+  const [theme, setThemeState] = useState<ThemeId>(() => getStoredTheme() ?? DEFAULT_THEME);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -33,7 +36,32 @@ export default function App() {
           <NavLink to="/instruments">Instruments</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
-        <div style={{ padding: "12px 10px", color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+
+        <div className="sidebar-section">
+          <div className="sidebar-section-title">Themes</div>
+          <div className="theme-grid" role="group" aria-label="Theme selection">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`theme-btn ${theme === t.id ? "active" : ""}`}
+                aria-pressed={theme === t.id}
+                onClick={() => {
+                  setThemeState(t.id);
+                  setTheme(t.id);
+                }}
+                title={`${t.label} (${t.mode})`}
+              >
+                <span className="theme-swatch" style={{ background: t.swatchBg }}>
+                  <span className="theme-dot" style={{ background: t.swatchAccent }} />
+                </span>
+                <span className="theme-label">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="sidebar-foot">
           API base:{" "}
           <span className="mono">
             {import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000"}
