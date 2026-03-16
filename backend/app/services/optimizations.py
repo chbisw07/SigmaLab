@@ -79,6 +79,10 @@ class OptimizationService:
         )
 
     def preview(self, *, strategy_slug: str, selection: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        if not selection:
+            raise ValueError("Select at least 1 parameter")
+        if len(selection) > 4:
+            raise ValueError("Select at most 4 parameters")
         detail = self.strategy_service.get_detail(strategy_slug)
         grid = build_param_grid(specs=detail.parameters, selection=selection)
         return {
@@ -89,6 +93,10 @@ class OptimizationService:
 
     def create_job(self, *, inp: OptimizationCreateInput) -> OptimizationCreateResult:
         # Resolve strategy, validate selection against strategy schema.
+        if not inp.selection:
+            raise ValueError("Select at least 1 parameter")
+        if len(inp.selection) > 4:
+            raise ValueError("Select at most 4 parameters")
         detail = self.strategy_service.get_detail(inp.strategy_slug)
 
         try:
