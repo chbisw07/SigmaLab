@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [resetBusy, setResetBusy] = useState(false);
   const [loginBusy, setLoginBusy] = useState(false);
   const [connectBusy, setConnectBusy] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [requestToken, setRequestToken] = useState("");
@@ -269,34 +270,61 @@ export default function SettingsPage() {
             />
           </div>
           <div className="row" style={{ gap: 10 }}>
-            <button className="btn" onClick={onSave} disabled={saveBusy}>
-              {saveBusy ? "Saving..." : "Save"}
-            </button>
             <button className="btn" onClick={onOpenLogin} disabled={loginBusy}>
               {loginBusy ? "Opening..." : "Open Zerodha Login"}
             </button>
             <button className="btn primary" onClick={onConnectFromRequestToken} disabled={connectBusy}>
               {connectBusy ? "Connecting..." : "Connect Zerodha"}
             </button>
-            <button className="btn" onClick={onTest} disabled={testBusy}>
-              {testBusy ? "Testing..." : "Test connection"}
-            </button>
-            <button className="btn danger" onClick={onClearSession} disabled={clearBusy}>
-              {clearBusy ? "Clearing..." : "Clear session"}
-            </button>
-            <button className="btn danger" onClick={onReset} disabled={resetBusy} title="Wipes stored broker secrets and status">
-              {resetBusy ? "Resetting..." : "Reset"}
+            <button
+              className="btn"
+              onClick={() => setShowAdvanced((v) => !v)}
+              aria-expanded={showAdvanced}
+              aria-controls="kite-advanced"
+              title="Show advanced broker actions"
+            >
+              {showAdvanced ? "Hide advanced" : "Advanced"}
             </button>
           </div>
         </div>
+
+        {showAdvanced ? (
+          <div id="kite-advanced" className="panel" style={{ marginTop: 12, background: "rgba(255,255,255,0.03)" }}>
+            <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
+              <div>
+                <div style={{ fontWeight: 650 }}>Advanced</div>
+                <div className="subtle">Optional actions for debugging, token rotation, and recovery.</div>
+              </div>
+            </div>
+            <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+              <button className="btn" onClick={onSave} disabled={saveBusy}>
+                {saveBusy ? "Saving..." : "Save api_key/api_secret"}
+              </button>
+              <button className="btn" onClick={onTest} disabled={testBusy}>
+                {testBusy ? "Testing..." : "Test connection"}
+              </button>
+              <button className="btn danger" onClick={onClearSession} disabled={clearBusy}>
+                {clearBusy ? "Clearing..." : "Clear session"}
+              </button>
+              <button
+                className="btn danger"
+                onClick={onReset}
+                disabled={resetBusy}
+                title="Wipes stored broker secrets and status (use if SIGMALAB_ENCRYPTION_KEY changed)"
+              >
+                {resetBusy ? "Resetting..." : "Reset broker state"}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="subtle" style={{ marginTop: 12 }}>
           Notes:
           <div className="mono" style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
             - Secrets are never returned by the API; only masked values are shown above.
-            {"\n"}- Flow: Save api_key/api_secret → Open Zerodha Login → paste request_token → Connect Zerodha.
+            {"\n"}- Flow: Enter api_key/api_secret → Open Zerodha Login → paste request_token → Connect Zerodha.
             {"\n"}- Instrument sync and historical backfill require a valid access token (created by the Connect step).
-            {"\n"}- If SIGMALAB_ENCRYPTION_KEY changes, click Reset and re-save credentials.
+            {"\n"}- If SIGMALAB_ENCRYPTION_KEY changes, use Advanced → Reset broker state → re-save credentials.
           </div>
         </div>
       </div>
