@@ -107,7 +107,7 @@ class DBCandleStore(BaseCandleStore):
 
 def make_market_data_service(settings: Settings, session: Session) -> MarketDataService:
     try:
-        kite = make_kite_client(settings)
+        kite = make_kite_client(settings, session=session)
         fetcher = HistoricalFetcher(client=kite)
     except Exception as e:
         fetcher = HistoricalFetcher(client=_DisabledKiteClient(str(e)))
