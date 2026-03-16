@@ -3,11 +3,12 @@
 Strategies should import indicators from this package (not reimplement logic).
 """
 
-from indicators.ta import adx, atr, ema, rsi, rolling_high, rolling_low, sma, true_range, vwap
+from indicators.ta import adx, atr, dmi, ema, rsi, rolling_high, rolling_low, sma, true_range, vwap
 
 __all__ = [
     "adx",
     "atr",
+    "dmi",
     "ema",
     "rsi",
     "rolling_high",
@@ -16,4 +17,3 @@ __all__ = [
     "true_range",
     "vwap",
 ]
-

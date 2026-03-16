@@ -93,3 +93,36 @@ def adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> 
     dx = (100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0.0, pd.NA)).astype("float64")
     return dx.ewm(alpha=1.0 / period, adjust=False, min_periods=period).mean()
 
+
+def dmi(
+    high: pd.Series,
+    low: pd.Series,
+    close: pd.Series,
+    di_len: int = 14,
+    adx_smoothing: int = 14,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Directional Movement Index (+DI, -DI) and ADX with separate smoothing.
+
+    This matches TradingView Pine's `ta.dmi(diLen, adxSmoothing)` structure:
+    - +DI / -DI are computed using Wilder smoothing over `di_len`
+    - ADX is Wilder smoothed DX over `adx_smoothing`
+    """
+    up_move = high.diff()
+    down_move = -low.diff()
+
+    plus_dm = up_move.where((up_move > down_move) & (up_move > 0), 0.0)
+    minus_dm = down_move.where((down_move > up_move) & (down_move > 0), 0.0)
+
+    tr = true_range(high, low, close)
+    tr_w = tr.ewm(alpha=1.0 / di_len, adjust=False, min_periods=di_len).mean()
+    plus_dm_w = plus_dm.ewm(alpha=1.0 / di_len, adjust=False, min_periods=di_len).mean()
+    minus_dm_w = minus_dm.ewm(alpha=1.0 / di_len, adjust=False, min_periods=di_len).mean()
+
+    tr_safe = tr_w.replace(0.0, pd.NA)
+    plus_di = (100.0 * (plus_dm_w / tr_safe)).astype("float64")
+    minus_di = (100.0 * (minus_dm_w / tr_safe)).astype("float64")
+
+    denom = (plus_di + minus_di).replace(0.0, pd.NA)
+    dx = (100.0 * (plus_di - minus_di).abs() / denom).astype("float64")
+    adx_out = dx.ewm(alpha=1.0 / adx_smoothing, adjust=False, min_periods=adx_smoothing).mean().astype("float64")
+    return plus_di, minus_di, adx_out

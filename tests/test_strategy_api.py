@@ -13,7 +13,7 @@ def test_list_strategies_endpoint() -> None:
     data = resp.json()
     assert data["status"] == "ok"
     slugs = sorted([s["slug"] for s in data["strategies"]])
-    assert slugs == ["intraday_vwap_pullback", "swing_trend_pullback"]
+    assert slugs == ["intraday_vwap_pullback", "supertrend_v6_pro", "swing_trend_pullback"]
 
 
 def test_get_strategy_detail_and_validate_params() -> None:
@@ -31,4 +31,3 @@ def test_get_strategy_detail_and_validate_params() -> None:
 
     bad = client.post("/strategies/swing_trend_pullback/validate", json={"nope": 1})
     assert bad.status_code == 400
-
