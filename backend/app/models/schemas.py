@@ -115,6 +115,27 @@ class BacktestMetricSchema(Timestamped):
 class OptimizationJobSchema(Timestamped):
     strategy_version_id: uuid.UUID
     watchlist_id: uuid.UUID
+    strategy_slug: str | None = None
+    strategy_code_version: str | None = None
+    timeframe: str
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+    objective_metric: str
+    sort_direction: str
+    total_combinations: int
+    completed_combinations: int
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     search_space_json: dict
+    execution_assumptions_json: dict
     status: OptimizationJobStatus
     result_summary_json: dict
+
+
+class OptimizationCandidateResultSchema(Timestamped):
+    optimization_job_id: uuid.UUID
+    backtest_run_id: uuid.UUID
+    rank: int
+    params_json: dict
+    objective_value: float
+    metrics_json: dict
