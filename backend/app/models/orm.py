@@ -37,6 +37,9 @@ class OptimizationJobStatus(enum.StrEnum):
 
 class BrokerConnection(Base, IdMixin, TimestampMixin):
     __tablename__ = "broker_connections"
+    __table_args__ = (
+        UniqueConstraint("broker_name", name="uq_broker_connections_broker_name"),
+    )
 
     broker_name: Mapped[BrokerName] = mapped_column(Enum(BrokerName), nullable=False)
     status: Mapped[BrokerConnectionStatus] = mapped_column(
