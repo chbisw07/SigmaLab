@@ -28,6 +28,7 @@ describe("Settings (PH7 Kite broker section)", () => {
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(await screen.findByText("Zerodha / Kite (v1)")).toBeInTheDocument();
     expect(await screen.findByText(/Kite: disconnected/i)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Open Zerodha Login" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Connect Zerodha" })).toBeInTheDocument();
   });
 });
-

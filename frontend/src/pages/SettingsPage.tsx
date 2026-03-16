@@ -14,9 +14,13 @@ export default function SettingsPage() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
   const [clearBusy, setClearBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [connectBusy, setConnectBusy] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
-  const [accessToken, setAccessToken] = useState("");
+  const [requestToken, setRequestToken] = useState("");
+  const [accessToken, setAccessToken] = useState(""); // optional manual mode
 
   useEffect(() => {
     setErr(null);
@@ -47,24 +51,84 @@ export default function SettingsPage() {
   const kiteConfigured = kite?.configured ?? false;
   const kiteStatus = kite?.status ?? "disconnected";
 
+  async function saveCredsOrThrow() {
+    const next = await api.saveKiteBrokerCredentials({
+      api_key: apiKey.trim() ? apiKey.trim() : null,
+      api_secret: apiSecret.trim() ? apiSecret.trim() : null,
+      access_token: accessToken.trim() ? accessToken.trim() : null
+    });
+    setKite(next);
+    // Avoid keeping secrets in memory longer than needed.
+    setApiKey("");
+    setApiSecret("");
+    setRequestToken("");
+    setAccessToken("");
+  }
+
   async function onSave() {
     setKiteErr(null);
     setSaveBusy(true);
     try {
-      const next = await api.saveKiteBrokerCredentials({
-        api_key: apiKey.trim() ? apiKey.trim() : null,
-        api_secret: apiSecret.trim() ? apiSecret.trim() : null,
-        access_token: accessToken.trim() ? accessToken.trim() : null
-      });
-      setKite(next);
-      // Avoid keeping secrets in memory longer than needed.
-      setApiKey("");
-      setApiSecret("");
-      setAccessToken("");
+      await saveCredsOrThrow();
     } catch (e) {
       setKiteErr(e instanceof Error ? e.message : String(e));
     } finally {
       setSaveBusy(false);
+    }
+  }
+
+  async function onReset() {
+    setKiteErr(null);
+    setResetBusy(true);
+    try {
+      const next = await api.resetKiteBrokerState();
+      setKite(next);
+      setApiKey("");
+      setApiSecret("");
+      setRequestToken("");
+      setAccessToken("");
+    } catch (e) {
+      setKiteErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setResetBusy(false);
+    }
+  }
+
+  async function onOpenLogin() {
+    setKiteErr(null);
+    setLoginBusy(true);
+    try {
+      // Ensure api_key/api_secret are saved first if user typed them.
+      if (apiKey.trim() || apiSecret.trim()) {
+        await saveCredsOrThrow();
+      }
+      const r = await api.getKiteLoginUrl();
+      window.open(r.login_url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setKiteErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
+  async function onConnectFromRequestToken() {
+    setKiteErr(null);
+    setConnectBusy(true);
+    try {
+      // Save api_key/api_secret if user typed them.
+      if (apiKey.trim() || apiSecret.trim()) {
+        await saveCredsOrThrow();
+      }
+      const rt = requestToken.trim();
+      if (!rt) throw new Error("request_token is required");
+      await api.exchangeKiteRequestToken({ request_token: rt });
+      const next = await api.getKiteBrokerState();
+      setKite(next);
+      setRequestToken("");
+    } catch (e) {
+      setKiteErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setConnectBusy(false);
     }
   }
 
@@ -192,14 +256,14 @@ export default function SettingsPage() {
           </div>
           <div style={{ flex: "1 1 280px" }}>
             <div className="subtle" style={{ marginBottom: 6 }}>
-              Access Token (session)
+              request_token (after login)
             </div>
             <input
               className="input"
               type="password"
-              placeholder="Paste access_token"
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="Paste request_token"
+              value={requestToken}
+              onChange={(e) => setRequestToken(e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
@@ -208,11 +272,20 @@ export default function SettingsPage() {
             <button className="btn" onClick={onSave} disabled={saveBusy}>
               {saveBusy ? "Saving..." : "Save"}
             </button>
+            <button className="btn" onClick={onOpenLogin} disabled={loginBusy}>
+              {loginBusy ? "Opening..." : "Open Zerodha Login"}
+            </button>
+            <button className="btn primary" onClick={onConnectFromRequestToken} disabled={connectBusy}>
+              {connectBusy ? "Connecting..." : "Connect Zerodha"}
+            </button>
             <button className="btn" onClick={onTest} disabled={testBusy}>
               {testBusy ? "Testing..." : "Test connection"}
             </button>
             <button className="btn danger" onClick={onClearSession} disabled={clearBusy}>
               {clearBusy ? "Clearing..." : "Clear session"}
+            </button>
+            <button className="btn danger" onClick={onReset} disabled={resetBusy} title="Wipes stored broker secrets and status">
+              {resetBusy ? "Resetting..." : "Reset"}
             </button>
           </div>
         </div>
@@ -221,8 +294,9 @@ export default function SettingsPage() {
           Notes:
           <div className="mono" style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
             - Secrets are never returned by the API; only masked values are shown above.
-            {"\n"}- Instrument sync and historical backfill require a valid access token.
-            {"\n"}- If you prefer env-only config, you can still set SIGMALAB_KITE_API_KEY / SIGMALAB_KITE_ACCESS_TOKEN in backend .env.
+            {"\n"}- Flow: Save api_key/api_secret → Open Zerodha Login → paste request_token → Connect Zerodha.
+            {"\n"}- Instrument sync and historical backfill require a valid access token (created by the Connect step).
+            {"\n"}- If SIGMALAB_ENCRYPTION_KEY changes, click Reset and re-save credentials.
           </div>
         </div>
       </div>

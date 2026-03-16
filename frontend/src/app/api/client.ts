@@ -17,6 +17,8 @@ import type {
   KiteBrokerSaveRequest,
   KiteBrokerState,
   KiteBrokerTestResponse,
+  KiteExchangeRequestTokenResponse,
+  KiteLoginUrlResponse,
   PresetCreateResponse,
   StrategyPresetsResponse,
   Watchlist,
@@ -88,6 +90,15 @@ export const api = {
   },
   saveKiteBrokerCredentials(payload: KiteBrokerSaveRequest): Promise<KiteBrokerState> {
     return apiPostJson("/settings/broker/kite", payload);
+  },
+  resetKiteBrokerState(): Promise<KiteBrokerState> {
+    return apiPostJson("/settings/broker/kite/reset", {});
+  },
+  getKiteLoginUrl(): Promise<KiteLoginUrlResponse> {
+    return apiGet("/settings/broker/kite/login-url");
+  },
+  exchangeKiteRequestToken(payload: { request_token: string }): Promise<KiteExchangeRequestTokenResponse> {
+    return apiPostJson("/settings/broker/kite/exchange", payload);
   },
   testKiteBrokerConnection(): Promise<KiteBrokerTestResponse> {
     return apiPostJson("/settings/broker/kite/test", {});

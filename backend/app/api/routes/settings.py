@@ -25,6 +25,9 @@ class KiteCredentialsUpsertRequest(BaseModel):
     api_secret: str | None = Field(default=None)
     access_token: str | None = Field(default=None)
 
+class KiteExchangeRequestTokenRequest(BaseModel):
+    request_token: str = Field(..., min_length=3)
+
 
 def _none_if_blank(v: str | None) -> str | None:
     if v is None:
@@ -45,6 +48,16 @@ def get_kite_state(
 ) -> dict[str, Any]:
     return _svc(session, settings).get_public_state()
 
+@router.post("/broker/kite/reset")
+def reset_kite_state(
+    session: Session = Depends(get_db_session),
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    try:
+        return _svc(session, settings).force_reset()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 @router.post("/broker/kite")
 def save_kite_credentials(
@@ -58,6 +71,29 @@ def save_kite_credentials(
             api_secret=_none_if_blank(req.api_secret),
             access_token=_none_if_blank(req.access_token),
         )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/broker/kite/login-url")
+def kite_login_url(
+    session: Session = Depends(get_db_session),
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    try:
+        return _svc(session, settings).login_url()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/broker/kite/exchange")
+def kite_exchange_request_token(
+    req: KiteExchangeRequestTokenRequest,
+    session: Session = Depends(get_db_session),
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    try:
+        return _svc(session, settings).exchange_request_token(request_token=req.request_token)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -82,4 +118,3 @@ def clear_kite_session(
         return _svc(session, settings).clear_session()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-

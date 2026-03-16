@@ -218,7 +218,15 @@ export type KiteBrokerSaveRequest = {
 
 export type KiteBrokerTestResponse = {
   status: "ok" | "error";
-  tested_at: string;
+  tested_at?: string;
+  message: string;
+  profile?: Record<string, unknown>;
+};
+
+export type KiteLoginUrlResponse = { status: "ok"; login_url: string };
+
+export type KiteExchangeRequestTokenResponse = {
+  status: "ok" | "error";
   message: string;
   profile?: Record<string, unknown>;
 };

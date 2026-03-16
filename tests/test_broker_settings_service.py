@@ -49,6 +49,23 @@ class _FakeKiteFail:
         raise RuntimeError("auth failed: invalid token")
 
 
+class _FakeKiteConnect:
+    def __init__(self, api_key: str) -> None:
+        self.api_key = api_key
+        self._access_token: str | None = None
+
+    def login_url(self) -> str:
+        return f"https://kite.zerodha.com/connect/login?api_key={self.api_key}&v=3"
+
+    def generate_session(self, request_token: str, api_secret: str) -> dict[str, Any]:  # noqa: ARG002
+        if request_token != "rt_ok":
+            raise RuntimeError("Token is invalid or has expired.")
+        return {"access_token": "at_ok"}
+
+    def set_access_token(self, access_token: str) -> None:
+        self._access_token = access_token
+
+
 def test_save_credentials_requires_encryption_key() -> None:
     repo = _FakeRepo()
     svc = KiteBrokerSettingsService(repo=repo, settings=Settings(env="test", encryption_key=None))
@@ -121,3 +138,50 @@ def test_test_connection_failure_is_user_safe_and_does_not_leak_secrets() -> Non
     assert "s9999" not in str(resp)
     assert "t5555" not in str(resp)
 
+
+def test_login_url_requires_configured_api_key() -> None:
+    key = Fernet.generate_key().decode("utf-8")
+    repo = _FakeRepo()
+    svc = KiteBrokerSettingsService(repo=repo, settings=Settings(env="test", encryption_key=key))
+    with pytest.raises(ValueError, match="not configured"):
+        svc.login_url()
+
+
+def test_login_url_returns_url() -> None:
+    key = Fernet.generate_key().decode("utf-8")
+    repo = _FakeRepo()
+    svc = KiteBrokerSettingsService(
+        repo=repo,
+        settings=Settings(env="test", encryption_key=key),
+        kite_connect_factory=lambda api_key: _FakeKiteConnect(api_key),
+    )
+    svc.save_credentials(api_key="k", api_secret="s", access_token=None)
+    r = svc.login_url()
+    assert r["status"] == "ok"
+    assert "api_key=k" in r["login_url"]
+
+
+def test_exchange_request_token_persists_access_token() -> None:
+    key = Fernet.generate_key().decode("utf-8")
+    repo = _FakeRepo()
+    svc = KiteBrokerSettingsService(
+        repo=repo,
+        settings=Settings(env="test", encryption_key=key),
+        kite_connect_factory=lambda api_key: _FakeKiteConnect(api_key),
+        kite_client_factory=lambda api_key, access_token: _FakeKiteOk(),  # noqa: ARG005
+    )
+    svc.save_credentials(api_key="k", api_secret="s", access_token=None)
+    resp = svc.exchange_request_token(request_token="rt_ok")
+    assert resp["status"] == "ok"
+    state = svc.get_public_state()
+    assert state["metadata"]["has_access_token"] is True
+    assert state["status"] == "connected"
+
+
+def test_force_reset_wipes_secrets() -> None:
+    key = Fernet.generate_key().decode("utf-8")
+    repo = _FakeRepo()
+    svc = KiteBrokerSettingsService(repo=repo, settings=Settings(env="test", encryption_key=key))
+    svc.save_credentials(api_key="k", api_secret="s", access_token="t")
+    s = svc.force_reset()
+    assert s["configured"] is False
