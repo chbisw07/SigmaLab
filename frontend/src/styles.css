@@ -32,6 +32,12 @@
   --table-row-hover: rgba(255, 255, 255, 0.04);
 
   --pill-border: rgba(255, 255, 255, 0.18);
+  --pill-ok-bg: rgba(52, 211, 153, 0.08);
+  --pill-ok-border: rgba(52, 211, 153, 0.35);
+  --pill-ok-text: rgba(52, 211, 153, 0.92);
+  --pill-bad-bg: rgba(251, 113, 133, 0.08);
+  --pill-bad-border: rgba(251, 113, 133, 0.35);
+  --pill-bad-text: rgba(251, 113, 133, 0.92);
 
   --tab-border: rgba(255, 255, 255, 0.14);
   --tab-bg: rgba(255, 255, 255, 0.05);
@@ -128,6 +134,12 @@
   --table-border: rgba(2, 6, 23, 0.10);
   --table-row-hover: rgba(2, 6, 23, 0.03);
   --pill-border: rgba(2, 6, 23, 0.16);
+  --pill-ok-bg: rgba(16, 185, 129, 0.16);
+  --pill-ok-border: rgba(16, 185, 129, 0.38);
+  --pill-ok-text: rgba(6, 95, 70, 0.92);
+  --pill-bad-bg: rgba(244, 63, 94, 0.14);
+  --pill-bad-border: rgba(244, 63, 94, 0.36);
+  --pill-bad-text: rgba(159, 18, 57, 0.92);
   --tab-border: rgba(2, 6, 23, 0.14);
   --tab-bg: rgba(2, 6, 23, 0.04);
   --tab-active-bg: rgba(14, 165, 233, 0.12);
@@ -166,6 +178,12 @@
   --table-border: rgba(55, 40, 19, 0.10);
   --table-row-hover: rgba(55, 40, 19, 0.03);
   --pill-border: rgba(55, 40, 19, 0.16);
+  --pill-ok-bg: rgba(16, 185, 129, 0.16);
+  --pill-ok-border: rgba(16, 185, 129, 0.38);
+  --pill-ok-text: rgba(6, 95, 70, 0.92);
+  --pill-bad-bg: rgba(244, 63, 94, 0.14);
+  --pill-bad-border: rgba(244, 63, 94, 0.36);
+  --pill-bad-text: rgba(159, 18, 57, 0.92);
   --tab-border: rgba(55, 40, 19, 0.14);
   --tab-bg: rgba(55, 40, 19, 0.04);
   --tab-active-bg: rgba(14, 165, 233, 0.12);
@@ -204,6 +222,12 @@
   --table-border: rgba(6, 95, 70, 0.10);
   --table-row-hover: rgba(6, 95, 70, 0.03);
   --pill-border: rgba(6, 95, 70, 0.16);
+  --pill-ok-bg: rgba(16, 185, 129, 0.16);
+  --pill-ok-border: rgba(16, 185, 129, 0.38);
+  --pill-ok-text: rgba(6, 95, 70, 0.92);
+  --pill-bad-bg: rgba(244, 63, 94, 0.14);
+  --pill-bad-border: rgba(244, 63, 94, 0.36);
+  --pill-bad-text: rgba(159, 18, 57, 0.92);
   --tab-border: rgba(6, 95, 70, 0.14);
   --tab-bg: rgba(6, 95, 70, 0.04);
   --tab-active-bg: rgba(14, 165, 233, 0.12);
@@ -408,14 +432,16 @@ a {
   color: var(--muted);
 }
 .pill.ok {
-  border-color: rgba(52, 211, 153, 0.35);
-  color: rgba(52, 211, 153, 0.92);
-  background: rgba(52, 211, 153, 0.08);
+  border-color: var(--pill-ok-border);
+  color: var(--pill-ok-text);
+  background: var(--pill-ok-bg);
+  font-weight: 600;
 }
 .pill.bad {
-  border-color: rgba(251, 113, 133, 0.35);
-  color: rgba(251, 113, 133, 0.92);
-  background: rgba(251, 113, 133, 0.08);
+  border-color: var(--pill-bad-border);
+  color: var(--pill-bad-text);
+  background: var(--pill-bad-bg);
+  font-weight: 600;
 }
 
 .tabs {
