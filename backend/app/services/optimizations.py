@@ -63,17 +63,23 @@ class OptimizationService:
     """
 
     session: Session
+    strategy_service: StrategyService
+    replay_engine: ReplayEngine
     assumptions: ExecutionAssumptions
     tz: str = "Asia/Kolkata"
     engine_version: str = "ph4-replay-0.1"
 
     @classmethod
     def default(cls, session: Session) -> "OptimizationService":
-        return cls(session=session, assumptions=ExecutionAssumptions())
+        return cls(
+            session=session,
+            strategy_service=StrategyService.default(),
+            replay_engine=ReplayEngine(),
+            assumptions=ExecutionAssumptions(),
+        )
 
     def preview(self, *, strategy_slug: str, selection: dict[str, dict[str, Any]]) -> dict[str, Any]:
-        svc = StrategyService.default()
-        detail = svc.get_detail(strategy_slug)
+        detail = self.strategy_service.get_detail(strategy_slug)
         grid = build_param_grid(specs=detail.parameters, selection=selection)
         return {
             "status": "ok",
@@ -83,8 +89,7 @@ class OptimizationService:
 
     def create_job(self, *, inp: OptimizationCreateInput) -> OptimizationCreateResult:
         # Resolve strategy, validate selection against strategy schema.
-        strat_svc = StrategyService.default()
-        detail = strat_svc.get_detail(inp.strategy_slug)
+        detail = self.strategy_service.get_detail(inp.strategy_slug)
 
         try:
             grid = build_param_grid(specs=detail.parameters, selection=inp.selection)
@@ -135,11 +140,10 @@ class OptimizationService:
         opt_repo.set_status(job_id, status=OptimizationJobStatus.RUNNING, started_at=_utcnow())
 
         try:
-            strat_svc = StrategyService.default()
             if job.strategy_slug is None:
                 raise RuntimeError("optimization job missing strategy_slug snapshot")
-            detail = strat_svc.get_detail(job.strategy_slug)
-            strat = strat_svc.instantiate(job.strategy_slug)
+            detail = self.strategy_service.get_detail(job.strategy_slug)
+            strat = self.strategy_service.instantiate(job.strategy_slug)
 
             # Rebuild the grid deterministically from persisted selection.
             sel = (job.search_space_json or {}).get("selection") or {}
@@ -160,7 +164,7 @@ class OptimizationService:
 
             ind_cache = IndicatorCache()
             evaluator = StrategyEvaluator(indicator_cache=ind_cache)
-            engine = ReplayEngine()
+            engine = self.replay_engine
             bt_repo = BacktestRepository(self.session)
 
             # Persist candidate runs as we go, and keep a compact in-memory summary for ranking.
@@ -169,7 +173,7 @@ class OptimizationService:
             completed = 0
             for params in combos:
                 # Validate params using the strategy schema.
-                validated = strat_svc.validate(job.strategy_slug, params)
+                validated = self.strategy_service.validate(job.strategy_slug, params)
 
                 # Persist a BacktestRun for this candidate.
                 version = job.strategy_version_id
@@ -328,4 +332,3 @@ class OptimizationService:
             raise KeyError("candidate not found")
         preset_repo = ParameterPresetRepository(self.session)
         return preset_repo.create(strategy_version_id=job.strategy_version_id, name=name, values_json=cand.params_json)
-
