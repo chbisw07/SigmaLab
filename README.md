@@ -122,7 +122,7 @@ PY
 
 ## PH2 API Endpoints (Dev)
 
-- `POST /instruments/sync` (requires `SIGMALAB_KITE_API_KEY` + `SIGMALAB_KITE_ACCESS_TOKEN`)
+- `POST /instruments/sync` (requires Kite credentials via backend `.env` or PH7 Settings UI)
 - `GET /watchlists`
 - `POST /watchlists`
 - `PATCH /watchlists/{watchlist_id}`
@@ -130,7 +130,7 @@ PY
 - `POST /watchlists/{watchlist_id}/items/{instrument_id}`
 - `DELETE /watchlists/{watchlist_id}/items/{instrument_id}`
 - `GET /watchlists/{watchlist_id}/items`
-- `GET /market-data/candles?instrument_id=...&timeframe=45m&start=...&end=...` (requires Kite creds)
+- `GET /market-data/candles?instrument_id=...&timeframe=45m&start=...&end=...` (requires Kite credentials via backend `.env` or PH7 Settings UI)
 
 ## PH3 Strategy Engine
 
@@ -227,6 +227,27 @@ Notes:
 - Trade markers come from persisted `backtest_trades`.
 - Equity/drawdown curves come from persisted `backtest_metrics`.
 - Indicator overlays are recomputed deterministically from strategy code + stored params (they are not persisted artifacts yet).
+
+## PH7 Broker Integration (Zerodha/Kite)
+
+PH7 adds a broker settings layer that is **research-readiness only** (no live order placement).
+
+Broker credentials can be stored encrypted-at-rest in PostgreSQL (recommended for UI workflow):
+
+- set `SIGMALAB_ENCRYPTION_KEY` (Fernet key) in backend `.env`
+- configure Kite credentials from the Settings UI
+- use "Test connection" to validate the session
+
+PH7 API endpoints (dev):
+
+- `GET /settings/broker/kite`
+- `POST /settings/broker/kite` (save/update credentials, masked-only responses)
+- `POST /settings/broker/kite/test`
+- `POST /settings/broker/kite/clear-session`
+
+Access token helper:
+
+- [docs/HOWTO_kite_access_token.md](docs/HOWTO_kite_access_token.md)
 
 ## PH5 Optimization Engine
 
