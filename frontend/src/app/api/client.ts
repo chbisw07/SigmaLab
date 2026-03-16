@@ -14,6 +14,9 @@ import type {
   OptimizationGetResponse,
   OptimizationPreviewResponse,
   OptimizationsListResponse,
+  KiteBrokerSaveRequest,
+  KiteBrokerState,
+  KiteBrokerTestResponse,
   PresetCreateResponse,
   StrategyPresetsResponse,
   Watchlist,
@@ -77,6 +80,20 @@ async function apiDelete(path: string): Promise<void> {
 export const api = {
   health(): Promise<HealthResponse> {
     return apiGet("/health");
+  },
+
+  // PH7 Broker settings (Zerodha/Kite)
+  getKiteBrokerState(): Promise<KiteBrokerState> {
+    return apiGet("/settings/broker/kite");
+  },
+  saveKiteBrokerCredentials(payload: KiteBrokerSaveRequest): Promise<KiteBrokerState> {
+    return apiPostJson("/settings/broker/kite", payload);
+  },
+  testKiteBrokerConnection(): Promise<KiteBrokerTestResponse> {
+    return apiPostJson("/settings/broker/kite/test", {});
+  },
+  clearKiteBrokerSession(): Promise<KiteBrokerState> {
+    return apiPostJson("/settings/broker/kite/clear-session", {});
   },
 
   listBacktests(): Promise<BacktestsListResponse> {

@@ -195,6 +195,34 @@ export type BacktestCreateResponse = {
 
 export type HealthResponse = { status: "ok" };
 
+export type BrokerConnectionStatus = "disconnected" | "connected" | "error";
+
+export type KiteBrokerState = {
+  broker_name: string;
+  configured: boolean;
+  status: BrokerConnectionStatus;
+  masked: {
+    api_key?: string | null;
+    api_secret?: string | null;
+    access_token?: string | null;
+  };
+  metadata: Record<string, unknown>;
+  last_verified_at: string | null;
+};
+
+export type KiteBrokerSaveRequest = {
+  api_key?: string | null;
+  api_secret?: string | null;
+  access_token?: string | null;
+};
+
+export type KiteBrokerTestResponse = {
+  status: "ok" | "error";
+  tested_at: string;
+  message: string;
+  profile?: Record<string, unknown>;
+};
+
 export type OptimizationJobStatus = "pending" | "running" | "success" | "failed";
 
 export type OptimizationJob = {

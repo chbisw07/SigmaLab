@@ -168,6 +168,14 @@ a {
   border-color: rgba(45, 212, 191, 0.48);
   background: rgba(45, 212, 191, 0.18);
 }
+.btn.danger {
+  border-color: rgba(251, 113, 133, 0.35);
+  background: rgba(251, 113, 133, 0.10);
+}
+.btn.danger:hover {
+  border-color: rgba(251, 113, 133, 0.52);
+  background: rgba(251, 113, 133, 0.14);
+}
 
 .table {
   width: 100%;
@@ -295,4 +303,3 @@ a {
 .input:focus {
   border-color: rgba(45, 212, 191, 0.40);
 }
-
