@@ -19,7 +19,9 @@ PH4 – Backtesting Engine: replay/simulation engine that turns strategy `Signal
 
 PH8 – Visualization / Results UX: a lightweight React UI to inspect persisted backtest runs, metrics, trades, and annotated chart context. It does not change PH4 semantics; it consumes PH4 artifacts.
 
-PH6 – Frontend UX (this branch): productizes the full research workflow (Dashboard → Watchlists → Strategies → Run Backtest → Results → Trade chart → Settings) on top of the PH8 results foundation.
+PH6 – Frontend UX: productizes the full research workflow (Dashboard → Watchlists → Strategies → Run Backtest → Results → Trade chart → Settings) on top of the PH8 results foundation.
+
+PH5 – Optimization Engine (this branch): grid-search parameter tuning that orchestrates many PH4 backtests, ranks candidates by a chosen objective metric, and lets you save top candidates as presets.
 
 ## Core Features (Target)
 
@@ -225,6 +227,26 @@ Notes:
 - Trade markers come from persisted `backtest_trades`.
 - Equity/drawdown curves come from persisted `backtest_metrics`.
 - Indicator overlays are recomputed deterministically from strategy code + stored params (they are not persisted artifacts yet).
+
+## PH5 Optimization Engine
+
+PH5 adds:
+
+- optimization jobs (grid search over tunable params)
+- ranking by a chosen objective metric
+- candidate results linked to persisted `BacktestRun` ids
+- saving a top candidate as a parameter preset
+
+PH5 API endpoints (dev):
+
+- `POST /optimizations/preview`
+- `POST /optimizations`
+- `GET /optimizations`
+- `GET /optimizations/{job_id}`
+- `GET /optimizations/{job_id}/candidates`
+- `POST /optimizations/{job_id}/save-preset`
+- `GET /strategies/{slug}/presets`
+- `POST /strategies/{slug}/presets`
 
 ## PH4 Optimization-Readiness Enhancements
 

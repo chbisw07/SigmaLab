@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../app/api/client";
-import type { ParameterSpec, StrategyMetadata, UUID, Watchlist } from "../app/api/types";
+import type { ParameterPreset, ParameterSpec, StrategyMetadata, UUID, Watchlist } from "../app/api/types";
 import PageHeader from "../app/ui/PageHeader";
 import InlineError from "../app/ui/InlineError";
 import EmptyState from "../app/ui/EmptyState";
@@ -88,6 +88,8 @@ export default function BacktestNewPage() {
   const [watchlistId, setWatchlistId] = useState<UUID>(sp.get("watchlist") ?? "");
   const [strategySlug, setStrategySlug] = useState<string>(sp.get("strategy") ?? "");
   const [timeframe, setTimeframe] = useState<string>("");
+  const [presets, setPresets] = useState<ParameterPreset[] | null>(null);
+  const [presetId, setPresetId] = useState<string>("");
 
   const today = new Date();
   const [start, setStart] = useState<string>(isoLocalDate(new Date(today.getFullYear(), today.getMonth() - 2, today.getDate())));
@@ -116,18 +118,25 @@ export default function BacktestNewPage() {
       setParamsSpec(null);
       setParams({});
       setTimeframe("");
+      setPresets(null);
+      setPresetId("");
       return;
     }
     setRunErr(null);
     setParamsSpec(null);
     (async () => {
       try {
-        const d = await api.getStrategy(strategySlug);
+        const [d, p] = await Promise.all([
+          api.getStrategy(strategySlug),
+          api.listStrategyPresets(strategySlug).catch(() => ({ status: "ok" as const, presets: [] }))
+        ]);
         setParamsSpec(d.parameters);
         const initial: Record<string, unknown> = {};
         for (const p of d.parameters) initial[p.key] = p.default;
         setParams(initial);
         setTimeframe(d.metadata.timeframe);
+        setPresets(p.presets);
+        setPresetId("");
       } catch (e) {
         setRunErr(e instanceof Error ? e.message : String(e));
       }
@@ -208,6 +217,32 @@ export default function BacktestNewPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <div className="subtle">Preset (optional)</div>
+            <select
+              className="input"
+              value={presetId}
+              disabled={!strategySlug || !presets || presets.length === 0}
+              onChange={(e) => {
+                const pid = e.target.value;
+                setPresetId(pid);
+                const preset = (presets ?? []).find((x) => x.id === pid);
+                if (!preset) return;
+                setParams((prev) => ({ ...prev, ...preset.values_json }));
+              }}
+            >
+              <option value="">{!strategySlug ? "Select strategy first…" : presets === null ? "Loading…" : presets.length === 0 ? "No presets" : "Select preset…"}</option>
+              {(presets ?? []).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <div className="subtle" style={{ marginTop: 6 }}>
+              Presets are saved from Optimization (PH5) or strategy detail.
+            </div>
           </div>
 
           <div>

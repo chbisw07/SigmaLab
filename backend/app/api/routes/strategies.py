@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
+from app.core.deps import get_db_session
+from app.models.schemas import ParameterPresetSchema
+from app.services.repos.presets import ParameterPresetRepository
+from app.services.repos.strategy_catalog import StrategyCatalogRepository
 from strategies.models import ParameterSpec, StrategyMetadata
 from strategies.params import ParameterValidationError
 from strategies.service import StrategyService
@@ -71,3 +77,38 @@ def validate_strategy_params(slug: str, params: dict[str, Any] | None = None) ->
         return {"status": "ok", "validated": validated}
     except (KeyError, ParameterValidationError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/{slug}/presets")
+def list_presets(slug: str, session: Session = Depends(get_db_session)) -> dict[str, Any]:
+    """List parameter presets for the current strategy version (PH5)."""
+    svc = StrategyService.default()
+    try:
+        detail = svc.get_detail(slug)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    version = StrategyCatalogRepository(session).get_or_create_version(metadata=detail.metadata, parameters=detail.parameters)
+    rows = ParameterPresetRepository(session).list_for_strategy_version(version.id, limit=200)
+    return {"status": "ok", "presets": [ParameterPresetSchema.model_validate(p).model_dump() for p in rows]}
+
+
+class PresetCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    values: dict[str, Any]
+
+
+@router.post("/{slug}/presets")
+def create_preset(slug: str, payload: PresetCreate, session: Session = Depends(get_db_session)) -> dict[str, Any]:
+    svc = StrategyService.default()
+    try:
+        detail = svc.get_detail(slug)
+        validated = svc.validate(slug, payload.values).values
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ParameterValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    version = StrategyCatalogRepository(session).get_or_create_version(metadata=detail.metadata, parameters=detail.parameters)
+    preset = ParameterPresetRepository(session).create(strategy_version_id=version.id, name=payload.name, values_json=validated)
+    return {"status": "ok", "preset": ParameterPresetSchema.model_validate(preset).model_dump()}

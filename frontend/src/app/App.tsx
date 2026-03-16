@@ -11,6 +11,9 @@ import BacktestRunDetailPage from "../pages/BacktestRunDetailPage";
 import SettingsPage from "../pages/SettingsPage";
 import InstrumentsPage from "../pages/InstrumentsPage";
 import ResultsRunRedirect from "../pages/ResultsRunRedirect";
+import OptimizationsListPage from "../pages/OptimizationsListPage";
+import OptimizationNewPage from "../pages/OptimizationNewPage";
+import OptimizationDetailPage from "../pages/OptimizationDetailPage";
 
 export default function App() {
   return (
@@ -25,6 +28,7 @@ export default function App() {
           <NavLink to="/watchlists">Watchlists</NavLink>
           <NavLink to="/strategies">Strategies</NavLink>
           <NavLink to="/backtests">Backtests</NavLink>
+          <NavLink to="/optimizations">Optimization</NavLink>
           <NavLink to="/results">Results</NavLink>
           <NavLink to="/instruments">Instruments</NavLink>
           <NavLink to="/settings">Settings</NavLink>
@@ -51,6 +55,10 @@ export default function App() {
           <Route path="/backtests" element={<BacktestsListPage />} />
           <Route path="/backtests/new" element={<BacktestNewPage />} />
           <Route path="/backtests/:runId" element={<BacktestRunDetailPage />} />
+
+          <Route path="/optimizations" element={<OptimizationsListPage />} />
+          <Route path="/optimizations/new" element={<OptimizationNewPage />} />
+          <Route path="/optimizations/:jobId" element={<OptimizationDetailPage />} />
 
           {/* UX alias: keep results discoverable while preserving PH8 route compatibility. */}
           <Route path="/results" element={<Navigate to="/backtests" replace />} />

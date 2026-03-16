@@ -262,11 +262,48 @@ class OptimizationJob(Base, IdMixin, TimestampMixin):
     strategy_version_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("strategy_versions.id"), nullable=False, index=True
     )
+    # Snapshot strategy identity for UI and reproducibility.
+    strategy_slug: Mapped[str | None] = mapped_column(String(128), index=True)
+    strategy_code_version: Mapped[str | None] = mapped_column(String(32))
+
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("watchlists.id"), nullable=False, index=True
     )
+    timeframe: Mapped[str] = mapped_column(String(16), nullable=False, default="1D")
+    start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    objective_metric: Mapped[str] = mapped_column(String(64), nullable=False, default="net_return_pct")
+    sort_direction: Mapped[str] = mapped_column(String(8), nullable=False, default="desc")  # "asc" | "desc"
+
+    total_combinations: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    completed_combinations: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     search_space_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    execution_assumptions_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     status: Mapped[OptimizationJobStatus] = mapped_column(
         Enum(OptimizationJobStatus), nullable=False, default=OptimizationJobStatus.PENDING
     )
     result_summary_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+
+
+class OptimizationCandidateResult(Base, IdMixin, TimestampMixin):
+    __tablename__ = "optimization_candidate_results"
+    __table_args__ = (
+        Index("ix_opt_candidates_job_rank", "optimization_job_id", "rank"),
+        Index("ix_opt_candidates_job_id", "optimization_job_id"),
+    )
+
+    optimization_job_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("optimization_jobs.id"), nullable=False, index=True
+    )
+    backtest_run_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("backtest_runs.id"), nullable=False, index=True
+    )
+
+    rank: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    params_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    objective_value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    metrics_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)

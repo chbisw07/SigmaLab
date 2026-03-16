@@ -8,6 +8,14 @@ import type {
   BacktestsListResponse,
   HealthResponse,
   Instrument,
+  OptimizationCandidatesResponse,
+  OptimizationCreateRequest,
+  OptimizationCreateResponse,
+  OptimizationGetResponse,
+  OptimizationPreviewResponse,
+  OptimizationsListResponse,
+  PresetCreateResponse,
+  StrategyPresetsResponse,
   Watchlist,
   StrategyDetailResponse,
   StrategyValidateResponse,
@@ -142,5 +150,33 @@ export const api = {
   },
   syncInstruments(): Promise<{ status: "ok"; upserted: number }> {
     return apiPostJson("/instruments/sync", {});
-  }
+  },
+
+  // PH5 Optimization
+  previewOptimization(payload: { strategy_slug: string; selection: Record<string, unknown> }): Promise<OptimizationPreviewResponse> {
+    return apiPostJson("/optimizations/preview", payload);
+  },
+  createOptimization(payload: OptimizationCreateRequest): Promise<OptimizationCreateResponse> {
+    return apiPostJson("/optimizations", payload);
+  },
+  listOptimizations(): Promise<OptimizationsListResponse> {
+    return apiGet("/optimizations");
+  },
+  getOptimization(jobId: UUID): Promise<OptimizationGetResponse> {
+    return apiGet(`/optimizations/${jobId}`);
+  },
+  listOptimizationCandidates(jobId: UUID): Promise<OptimizationCandidatesResponse> {
+    return apiGet(`/optimizations/${jobId}/candidates`);
+  },
+  savePresetFromOptimization(jobId: UUID, payload: { candidate_id: UUID; name: string }): Promise<PresetCreateResponse> {
+    return apiPostJson(`/optimizations/${jobId}/save-preset`, payload);
+  },
+
+  // Parameter presets (PH5)
+  listStrategyPresets(slug: string): Promise<StrategyPresetsResponse> {
+    return apiGet(`/strategies/${encodeURIComponent(slug)}/presets`);
+  },
+  createStrategyPreset(slug: string, payload: { name: string; values: Record<string, unknown> }): Promise<PresetCreateResponse> {
+    return apiPostJson(`/strategies/${encodeURIComponent(slug)}/presets`, payload);
+  },
 };
